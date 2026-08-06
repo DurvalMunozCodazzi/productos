@@ -35,6 +35,8 @@ $marca_term = $marca_slug ? get_term_by('slug', $marca_slug, 'marca_producto') :
         <?php echo do_shortcode('[clc_marcas categoria="' . esc_attr($categoria->slug) . '"]'); ?>
     <?php endif; ?>
 
+    <?php echo do_shortcode('[clc_credito]'); ?>
+
 </main>
 
 <?php get_footer(); ?>

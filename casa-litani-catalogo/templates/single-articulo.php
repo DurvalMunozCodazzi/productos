@@ -33,6 +33,7 @@ get_header();
 
         <?php echo do_shortcode('[clc_boton_whatsapp]'); ?>
     <?php endwhile; ?>
+    <?php echo do_shortcode('[clc_credito]'); ?>
 </main>
 
 <?php get_footer(); ?>

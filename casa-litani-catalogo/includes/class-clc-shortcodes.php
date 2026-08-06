@@ -9,6 +9,15 @@ class CLC_Shortcodes {
         add_shortcode('clc_articulos', [__CLASS__, 'shortcode_articulos']);
         add_shortcode('clc_boton_whatsapp', [__CLASS__, 'shortcode_boton_whatsapp']);
         add_shortcode('clc_franja_categorias', [__CLASS__, 'shortcode_franja_categorias']);
+        add_shortcode('clc_credito', [__CLASS__, 'shortcode_credito']);
+    }
+
+    /** [clc_credito] — misma línea de autoría que en el pie de la landing */
+    public static function shortcode_credito() {
+        return '<div style="width:100%;margin-top:20px;padding-top:20px;border-top:1px solid #f0dbe0;text-align:center;">'
+            . '<a href="https://websobreruedas.com" target="_blank" rel="noopener" style="color:#71585d;font-size:.78rem;line-height:1;">'
+            . 'Hosting y Desarrollo Web: Web Sobre Ruedas by Durval Muñoz Codazzi'
+            . '</a></div>';
     }
 
     /**
