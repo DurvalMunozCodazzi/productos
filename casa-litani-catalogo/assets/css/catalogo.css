@@ -1,0 +1,55 @@
+.clc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 16px;
+    margin: 20px 0;
+}
+
+.clc-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    color: inherit;
+    border: 1px solid #e5e5e5;
+    border-radius: 10px;
+    padding: 12px;
+    background: #fff;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.clc-card:hover {
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+}
+
+.clc-card img {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    background: #f4f4f4;
+}
+
+.clc-card-titulo {
+    font-size: 14px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.clc-btn-whatsapp {
+    display: inline-block;
+    margin-top: 16px;
+    padding: 12px 22px;
+    background: #25D366;
+    color: #fff;
+    font-weight: 700;
+    border-radius: 8px;
+    text-decoration: none;
+}
+
+.clc-btn-whatsapp:hover {
+    background: #1ebe5b;
+    color: #fff;
+}
