@@ -3,7 +3,8 @@
  * Plugin Name: Casa Litani - Catálogo
  * Description: Catálogo de productos (sin precios) con categorías, marcas, importador de Excel y consulta por WhatsApp.
  * Version: 1.0.0
- * Author: Casa Litani
+ * Author: Durval Muñoz Codazzi - Web Sobre Ruedas
+ * Author URI: https://websobreruedas.com
  */
 
 if (!defined('ABSPATH')) {

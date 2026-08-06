@@ -1,6 +1,17 @@
 # Casa Litani - Catálogo (plugin WordPress)
 
-Catálogo de productos sin precios, con categorías, marcas, importador de Excel y botón de consulta por WhatsApp (round-robin entre varios números).
+Catálogo de productos sin precios, con categorías, marcas, importador de Excel y botón de consulta por WhatsApp.
+
+Autor: Durval Muñoz Codazzi — [Web Sobre Ruedas](https://websobreruedas.com)
+
+## Versionado
+
+Cada entrega sube la versión en dos lugares a la vez, que siempre deben coincidir:
+- El header del plugin (`casa-litani-catalogo.php` → `Version:`)
+- La constante `CLC_VERSION` (mismo archivo)
+
+El `.zip` que se entrega para instalar se nombra `casa-litani-catalogo-X.Y.Z.zip` con esa misma versión, y cada entrega
+queda taggeada en git (`vX.Y.Z`) para poder volver atrás si hace falta.
 
 ## Instalación
 
