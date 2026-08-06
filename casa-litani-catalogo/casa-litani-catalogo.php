@@ -19,6 +19,7 @@ require_once CLC_PATH . 'includes/class-clc-whatsapp.php';
 require_once CLC_PATH . 'includes/class-clc-settings.php';
 require_once CLC_PATH . 'includes/class-clc-shortcodes.php';
 require_once CLC_PATH . 'includes/class-clc-importer.php';
+require_once CLC_PATH . 'includes/class-clc-fotos.php';
 
 function clc_init_plugin() {
     CLC_Post_Type::init();
@@ -26,6 +27,7 @@ function clc_init_plugin() {
     CLC_Settings::init();
     CLC_Shortcodes::init();
     CLC_Importer::init();
+    CLC_Fotos::init();
 }
 add_action('plugins_loaded', 'clc_init_plugin');
 

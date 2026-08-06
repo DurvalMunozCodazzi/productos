@@ -119,6 +119,6 @@ class CLC_Shortcodes {
         if (empty($link)) {
             return '';
         }
-        return '<a class="clc-btn-whatsapp" href="' . esc_url($link) . '" target="_blank" rel="noopener">Consultar precio por WhatsApp</a>';
+        return '<a class="clc-btn-whatsapp" href="' . esc_url($link) . '" target="_blank" rel="noopener">Consultar</a>';
     }
 }
