@@ -34,9 +34,25 @@ add_action('plugins_loaded', 'clc_init_plugin');
 function clc_activate() {
     CLC_Post_Type::register_post_type();
     CLC_Post_Type::register_taxonomies();
+    clc_crear_pagina_catalogo();
     flush_rewrite_rules();
 }
 register_activation_hook(__FILE__, 'clc_activate');
+
+/** Crea automáticamente la página "Catálogo" con el shortcode de categorías, si todavía no existe. */
+function clc_crear_pagina_catalogo() {
+    $existente = get_page_by_path('catalogo');
+    if ($existente) {
+        return;
+    }
+    wp_insert_post([
+        'post_title' => 'Catálogo',
+        'post_name' => 'catalogo',
+        'post_content' => '[clc_categorias]',
+        'post_status' => 'publish',
+        'post_type' => 'page',
+    ]);
+}
 
 function clc_deactivate() {
     flush_rewrite_rules();
@@ -52,6 +68,12 @@ add_action('wp_enqueue_scripts', 'clc_enqueue_assets');
 function clc_template_include($template) {
     if (is_singular('articulo')) {
         $custom = CLC_PATH . 'templates/single-articulo.php';
+        if (file_exists($custom)) {
+            return $custom;
+        }
+    }
+    if (is_tax('categoria_producto')) {
+        $custom = CLC_PATH . 'templates/taxonomy-categoria_producto.php';
         if (file_exists($custom)) {
             return $custom;
         }

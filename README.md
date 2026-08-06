@@ -6,6 +6,8 @@ Catálogo de productos sin precios, con categorías, marcas, importador de Excel
 
 1. Comprimir la carpeta `casa-litani-catalogo/` en un `.zip`.
 2. En WordPress: Plugins → Añadir nuevo → Subir plugin → seleccionar el `.zip` → Instalar → Activar.
+   Al activarse se crea automáticamente la página **/catalogo/** con la grilla de categorías — no hay que armar nada a mano.
+   Desde ahí la navegación Categoría → Marca → Artículo funciona sola.
 3. El botón "Consultar" de cada ficha ya apunta al WhatsApp fijo de Casa Litani (+595985773704), no requiere configuración.
 4. (Opcional, para importar el Excel) Instalar PhpSpreadsheet vía Composer dentro de la carpeta del plugin en el hosting (Plesk):
    ```
