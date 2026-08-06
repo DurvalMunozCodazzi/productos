@@ -23,6 +23,8 @@ $marca_term = $marca_slug ? get_term_by('slug', $marca_slug, 'marca_producto') :
         <?php endif; ?>
     </nav>
 
+    <?php echo do_shortcode('[clc_franja_categorias categoria_actual="' . esc_attr($categoria->slug) . '"]'); ?>
+
     <?php if ($marca_term): ?>
         <h1><?php echo esc_html($marca_term->name); ?></h1>
         <p style="color:#777;">Modelos disponibles de <?php echo esc_html($marca_term->name); ?> en <?php echo esc_html($categoria->name); ?>.</p>

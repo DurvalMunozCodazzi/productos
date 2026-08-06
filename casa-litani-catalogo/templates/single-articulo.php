@@ -8,10 +8,12 @@ get_header();
 
 <main class="clc-single-articulo" style="max-width:800px;margin:40px auto;padding:0 16px;">
     <?php while (have_posts()): the_post(); ?>
-        <h1><?php the_title(); ?></h1>
-
         <?php $marcas = get_the_terms(get_the_ID(), 'marca_producto'); ?>
         <?php $categorias = get_the_terms(get_the_ID(), 'categoria_producto'); ?>
+
+        <?php echo do_shortcode('[clc_franja_categorias categoria_actual="' . (($categorias && !is_wp_error($categorias)) ? esc_attr($categorias[0]->slug) : '') . '"]'); ?>
+
+        <h1><?php the_title(); ?></h1>
         <p style="color:#666;">
             <?php if ($categorias && !is_wp_error($categorias)): ?>
                 <?php echo esc_html($categorias[0]->name); ?>

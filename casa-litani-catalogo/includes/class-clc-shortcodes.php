@@ -8,6 +8,30 @@ class CLC_Shortcodes {
         add_shortcode('clc_marcas', [__CLASS__, 'shortcode_marcas']);
         add_shortcode('clc_articulos', [__CLASS__, 'shortcode_articulos']);
         add_shortcode('clc_boton_whatsapp', [__CLASS__, 'shortcode_boton_whatsapp']);
+        add_shortcode('clc_franja_categorias', [__CLASS__, 'shortcode_franja_categorias']);
+    }
+
+    /**
+     * [clc_franja_categorias categoria_actual="celulares"]
+     * Franja fija de accesos rápidos a categorías. Se usa en todas las pantallas del catálogo
+     * (buscador, marca, artículo) para no perder nunca el acceso al resto de las categorías.
+     */
+    public static function shortcode_franja_categorias($atts) {
+        $atts = shortcode_atts(['categoria_actual' => ''], $atts);
+        $terms = get_terms(['taxonomy' => 'categoria_producto', 'hide_empty' => false]);
+        if (empty($terms) || is_wp_error($terms)) {
+            return '';
+        }
+        ob_start();
+        echo '<div class="clc-cat-strip">';
+        foreach ($terms as $term) {
+            $activo = ($term->slug === $atts['categoria_actual']) ? ' clc-cat-chip-activo' : '';
+            echo '<a class="clc-cat-chip' . $activo . '" href="' . esc_url(get_term_link($term)) . '">';
+            echo esc_html($term->name);
+            echo '</a>';
+        }
+        echo '</div>';
+        return ob_get_clean();
     }
 
     /** [clc_categorias] — grilla de categorías (nivel 1 de navegación) */

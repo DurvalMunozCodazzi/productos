@@ -40,6 +40,7 @@ class CLC_Filtro {
 
     public static function shortcode() {
         ob_start();
+        echo do_shortcode('[clc_franja_categorias]');
         ?>
         <div class="clc-filtro-barra">
             <select id="clc-filtro-categoria">
