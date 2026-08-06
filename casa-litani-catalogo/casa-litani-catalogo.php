@@ -20,6 +20,7 @@ require_once CLC_PATH . 'includes/class-clc-settings.php';
 require_once CLC_PATH . 'includes/class-clc-shortcodes.php';
 require_once CLC_PATH . 'includes/class-clc-importer.php';
 require_once CLC_PATH . 'includes/class-clc-fotos.php';
+require_once CLC_PATH . 'includes/class-clc-filtro.php';
 
 function clc_init_plugin() {
     CLC_Post_Type::init();
@@ -28,6 +29,7 @@ function clc_init_plugin() {
     CLC_Shortcodes::init();
     CLC_Importer::init();
     CLC_Fotos::init();
+    CLC_Filtro::init();
 }
 add_action('plugins_loaded', 'clc_init_plugin');
 
@@ -45,10 +47,11 @@ function clc_crear_pagina_catalogo() {
     if ($existente) {
         return;
     }
+    $contenido = "<h2>Explorá por categoría</h2>\n[clc_categorias]\n\n<h2>O buscá directo</h2>\n[clc_filtro_catalogo]";
     wp_insert_post([
         'post_title' => 'Catálogo',
         'post_name' => 'catalogo',
-        'post_content' => '[clc_categorias]',
+        'post_content' => $contenido,
         'post_status' => 'publish',
         'post_type' => 'page',
     ]);

@@ -40,6 +40,8 @@ class CLC_Post_Type {
             'hierarchical' => true,
             'public' => true,
             'show_admin_column' => true,
+            'show_in_rest' => true,
+            'rest_base' => 'categoria_producto',
             'rewrite' => ['slug' => 'categoria'],
         ]);
 
@@ -51,6 +53,8 @@ class CLC_Post_Type {
             'hierarchical' => true,
             'public' => true,
             'show_admin_column' => true,
+            'show_in_rest' => true,
+            'rest_base' => 'marca_producto',
             'rewrite' => ['slug' => 'marca'],
         ]);
     }
