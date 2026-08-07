@@ -47,28 +47,49 @@ class CLC_Layout {
                   background:#fff; color:#555; font-weight:600; font-size:13px; padding:8px 14px; border-radius:100px; }
   .clc-cat-chip:hover { border-color:var(--accent); color:var(--accent); }
   .clc-cat-chip-activo { background:var(--accent); border-color:var(--accent); color:#fff; }
+
+  .clc-nav-links { display:flex; gap:28px; margin-left:auto; font-size:.95rem; font-weight:500; color:var(--dim); }
+  .clc-nav-toggle { display:none; }
+  @media (max-width: 780px) {
+    .clc-nav-links {
+      display:none; position:absolute; top:100%; left:0; right:0; flex-direction:column; gap:0;
+      background:#fff; border-bottom:1px solid var(--border); box-shadow:0 12px 24px rgba(0,0,0,.08);
+    }
+    .clc-nav-links.clc-nav-abierto { display:flex; }
+    .clc-nav-links a { padding:14px 24px; border-top:1px solid var(--border); }
+    .clc-nav-toggle {
+      display:flex; align-items:center; justify-content:center; width:40px; height:40px;
+      border:1px solid var(--border); border-radius:8px; background:#fff; cursor:pointer; margin-left:auto;
+    }
+    .clc-nav-toggle svg { width:22px; height:22px; }
+    .clc-header-wa-texto { display:none; }
+    .clc-header-wa { padding:12px !important; }
+  }
 </style>
 </head>
 <body <?php body_class(); ?>>
 <div class="cl">
 
   <div style="position:sticky;top:0;z-index:100;background:rgba(255,250,249,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)">
-    <div class="wrap" style="display:flex;align-items:center;justify-content:space-between;gap:24px;padding-top:14px;padding-bottom:14px">
+    <div class="wrap" style="position:relative;display:flex;align-items:center;justify-content:space-between;gap:24px;padding-top:14px;padding-bottom:14px">
       <a href="<?php echo esc_url(home_url('/')); ?>" aria-label="Casa Litani — Inicio" style="display:flex;align-items:center">
         <img src="<?php echo esc_url(self::logo_url()); ?>" alt="Casa Litani Electrónica" style="width:60px;height:60px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 2px rgba(0,0,0,.08),0 6px 16px rgba(0,0,0,.2);display:block">
       </a>
-      <div style="display:flex;gap:28px;margin-left:auto;font-size:.95rem;font-weight:500;color:var(--dim)">
+      <nav class="clc-nav-links" id="clc-nav-links">
         <a href="<?php echo esc_url(home_url('/')); ?>">Inicio</a>
         <a href="<?php echo esc_url(home_url('/catalogo/')); ?>" style="color:var(--accent)">Productos</a>
         <a href="<?php echo esc_url(home_url('/instalaciones/')); ?>">Instalaciones</a>
         <a href="<?php echo esc_url(home_url('/ubicacion/')); ?>">Ubicación</a>
         <a href="<?php echo esc_url(home_url('/contacto/')); ?>">Contacto</a>
-      </div>
+      </nav>
       <div style="display:flex;align-items:center;gap:14px;margin-left:12px">
-        <a href="https://wa.me/595985773704?text=Hola%20Casa%20Litani%2C%20quiero%20hacer%20una%20consulta" class="btn2 btn-wa" target="_blank" rel="noopener">
+        <a href="https://wa.me/595985773704?text=Hola%20Casa%20Litani%2C%20quiero%20hacer%20una%20consulta" class="btn2 btn-wa clc-header-wa" target="_blank" rel="noopener">
           <svg viewBox="0 0 24 24"><path d="M17.5 14.4c-.3-.1-1.7-.9-2-1-.3-.1-.5-.1-.7.1s-.7 1-.9 1.1c-.2.2-.3.2-.6.1s-1.3-.5-2.4-1.5c-.9-.8-1.5-1.8-1.7-2.1s0-.5.1-.6c.1-.1.3-.3.4-.5.1-.1.2-.3.3-.4.1-.2 0-.4 0-.5s-.7-1.6-.9-2.2c-.2-.5-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4s1 2.8 1.2 3c.1.2 2 3 4.8 4.3.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.7-.7 1.9-1.4.2-.7.2-1.2.2-1.3-.1-.1-.3-.2-.6-.3z"></path><path d="M12 2C6.5 2 2 6.5 2 12c0 1.9.5 3.7 1.5 5.3L2 22l4.8-1.3c1.5.8 3.3 1.3 5.2 1.3 5.5 0 10-4.5 10-10S17.5 2 12 2zm0 18.3c-1.7 0-3.4-.5-4.8-1.3l-.3-.2-3.2.8.9-3.1-.2-.3C3.5 14.7 3 13.4 3 12c0-5 4-9 9-9s9 4 9 9-4 9-9 9z"></path></svg>
-          WhatsApp
+          <span class="clc-header-wa-texto">WhatsApp</span>
         </a>
+        <button type="button" class="clc-nav-toggle" id="clc-nav-toggle" aria-label="Abrir menú" aria-expanded="false" aria-controls="clc-nav-links">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"></path></svg>
+        </button>
       </div>
     </div>
   </div>
@@ -115,6 +136,17 @@ class CLC_Layout {
   </a>
 
 </div>
+<script>
+(function () {
+  var btn = document.getElementById('clc-nav-toggle');
+  var menu = document.getElementById('clc-nav-links');
+  if (!btn || !menu) return;
+  btn.addEventListener('click', function () {
+    var abierto = menu.classList.toggle('clc-nav-abierto');
+    btn.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+  });
+})();
+</script>
 <?php wp_footer(); ?>
 </body>
 </html>
