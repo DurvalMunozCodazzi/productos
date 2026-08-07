@@ -25,6 +25,15 @@ get_header();
 
         <?php if (has_post_thumbnail()): ?>
             <?php the_post_thumbnail('large', ['style' => 'width:100%;border-radius:10px;']); ?>
+            <?php
+            $fotografo = get_post_meta(get_the_ID(), '_clc_pexels_fotografo', true);
+            $fotografo_url = get_post_meta(get_the_ID(), '_clc_pexels_fotografo_url', true);
+            if ($fotografo):
+            ?>
+                <p style="font-size:11px;color:#999;margin-top:4px;">
+                    Foto: <a href="<?php echo esc_url($fotografo_url ?: 'https://www.pexels.com'); ?>" target="_blank" rel="noopener"><?php echo esc_html($fotografo); ?></a> en Pexels
+                </p>
+            <?php endif; ?>
         <?php endif; ?>
 
         <div class="clc-descripcion" style="margin-top:20px;">

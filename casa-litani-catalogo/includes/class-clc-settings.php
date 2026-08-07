@@ -1,13 +1,10 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-/**
- * Pantalla de configuración de la búsqueda automática de fotos (Google Custom Search).
- */
+/** Pantalla de configuración: API Key de Pexels (gratuita) para las fotos automáticas. */
 class CLC_Settings {
 
-    const OPTION_API_KEY = 'clc_google_api_key';
-    const OPTION_CX = 'clc_google_cx';
+    const OPTION_API_KEY = 'clc_pexels_api_key';
 
     public static function init() {
         add_action('admin_menu', [__CLASS__, 'add_menu']);
@@ -17,7 +14,7 @@ class CLC_Settings {
     public static function add_menu() {
         add_submenu_page(
             'edit.php?post_type=articulo',
-            'Config. búsqueda de fotos',
+            'Config. de Pexels',
             'Config. Fotos',
             'manage_options',
             'clc-config-fotos',
@@ -25,15 +22,19 @@ class CLC_Settings {
         );
     }
 
+    public static function get_api_key() {
+        return trim(get_option(self::OPTION_API_KEY, ''));
+    }
+
     public static function render_page() {
-        $api_key = get_option(self::OPTION_API_KEY, '');
-        $cx = get_option(self::OPTION_CX, '');
+        $api_key = self::get_api_key();
         ?>
         <div class="wrap">
-            <h1>Configuración: búsqueda automática de fotos</h1>
-            <p>Usa la API de Google Custom Search (Búsqueda de Imágenes) para sugerir fotos de cada artículo por nombre/modelo,
-            igual que se hizo con las recetas de Ratatuin. Necesitás una API Key y un Search Engine ID (CX) configurados
-            para búsqueda de imágenes en toda la web, en <a href="https://programmablesearchengine.google.com/" target="_blank">Google Programmable Search Engine</a>.</p>
+            <h1>Configuración: fotos automáticas por Pexels</h1>
+            <p>Mismo sistema que se usa en ratatuin.com.ar para las recetas: la API gratuita de
+            <a href="https://www.pexels.com/api/" target="_blank">Pexels</a> busca una foto por el nombre del producto
+            y la carga sola. Creá una cuenta gratis en Pexels y pedí tu API Key desde
+            <a href="https://www.pexels.com/api/new/" target="_blank">pexels.com/api/new</a>.</p>
 
             <?php if (isset($_GET['guardado'])): ?>
                 <div class="notice notice-success"><p>Guardado correctamente.</p></div>
@@ -44,19 +45,16 @@ class CLC_Settings {
                 <?php wp_nonce_field('clc_guardar_config_fotos', 'clc_config_fotos_nonce'); ?>
                 <table class="form-table">
                     <tr>
-                        <th><label for="clc_api_key">API Key de Google</label></th>
+                        <th><label for="clc_api_key">API Key de Pexels</label></th>
                         <td><input type="text" id="clc_api_key" name="clc_api_key" value="<?php echo esc_attr($api_key); ?>" style="width:400px;"></td>
-                    </tr>
-                    <tr>
-                        <th><label for="clc_cx">Search Engine ID (CX)</label></th>
-                        <td><input type="text" id="clc_cx" name="clc_cx" value="<?php echo esc_attr($cx); ?>" style="width:400px;"></td>
                     </tr>
                 </table>
                 <p><button type="submit" class="button button-primary">Guardar</button></p>
             </form>
 
-            <p>Una vez configurado, entrá a cualquier <strong>Artículo</strong> y vas a ver el botón "Buscar foto" en el
-            editor — te muestra resultados para elegir con un click, igual que en Ratatuin.</p>
+            <p>Una vez guardada, andá a <strong>Artículos → Fotos</strong> para cargar las fotos: hay un botón para
+            traer una tanda ahora, un auto-cargado que va pidiendo tandas chicas solo cada 3 minutos, y también corre
+            una tanda grande automática cada hora aunque no tengas la pantalla abierta.</p>
         </div>
         <?php
     }
@@ -68,7 +66,6 @@ class CLC_Settings {
         check_admin_referer('clc_guardar_config_fotos', 'clc_config_fotos_nonce');
 
         update_option(self::OPTION_API_KEY, sanitize_text_field($_POST['clc_api_key'] ?? ''));
-        update_option(self::OPTION_CX, sanitize_text_field($_POST['clc_cx'] ?? ''));
 
         wp_safe_redirect(add_query_arg('guardado', '1', admin_url('edit.php?post_type=articulo&page=clc-config-fotos')));
         exit;
