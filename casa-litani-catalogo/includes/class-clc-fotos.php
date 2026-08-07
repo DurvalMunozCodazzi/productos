@@ -16,6 +16,7 @@ class CLC_Fotos {
     public static function init() {
         add_action('admin_menu', [__CLASS__, 'add_menu']);
         add_action('admin_post_clc_subir_foto', [__CLASS__, 'guardar_foto_manual']);
+        add_action('admin_post_clc_guardar_descripcion', [__CLASS__, 'guardar_descripcion_manual']);
         add_action('wp_ajax_clc_pexels_tanda', [__CLASS__, 'ajax_tanda']);
         add_action('admin_enqueue_scripts', [__CLASS__, 'enqueue']);
     }
@@ -23,8 +24,8 @@ class CLC_Fotos {
     public static function add_menu() {
         add_submenu_page(
             'edit.php?post_type=articulo',
-            'Fotos de artículos',
-            'Fotos',
+            'Fotos y descripciones de artículos',
+            'Fotos y descripciones',
             'manage_options',
             'clc-fotos',
             [__CLASS__, 'render_page']
@@ -107,6 +108,34 @@ class CLC_Fotos {
         exit;
     }
 
+    /** Guarda la descripción editada a mano en la tabla, o la regenera automáticamente si se pidió. */
+    public static function guardar_descripcion_manual() {
+        if (!current_user_can('manage_options')) {
+            wp_die('No autorizado');
+        }
+        check_admin_referer('clc_guardar_descripcion', 'clc_desc_nonce');
+
+        $post_id = (int) ($_POST['clc_post_id'] ?? 0);
+        if (!$post_id) {
+            wp_die('Falta el artículo');
+        }
+
+        if (!empty($_POST['clc_regenerar'])) {
+            $descripcion = CLC_Descripciones::generar_descripcion($post_id);
+        } else {
+            $descripcion = sanitize_textarea_field($_POST['clc_descripcion'] ?? '');
+        }
+
+        wp_update_post([
+            'ID' => $post_id,
+            'post_content' => $descripcion,
+        ]);
+        update_post_meta($post_id, '_clc_descripcion_generada', '1');
+
+        wp_safe_redirect(add_query_arg('guardado', '1', wp_get_referer() ?: admin_url('edit.php?post_type=articulo&page=clc-fotos')));
+        exit;
+    }
+
     public static function render_page() {
         if (!current_user_can('manage_options')) {
             return;
@@ -140,7 +169,7 @@ class CLC_Fotos {
         $con_foto = $total_articulos - $sin_foto;
         ?>
         <div class="wrap">
-            <h1>Artículos — Fotos</h1>
+            <h1>Artículos — Fotos y descripciones</h1>
 
             <?php if (isset($_GET['guardado'])): ?>
                 <div class="notice notice-success is-dismissible"><p>Guardado.</p></div>
@@ -185,9 +214,10 @@ class CLC_Fotos {
                 <thead>
                     <tr>
                         <th style="width:70px;">Foto</th>
-                        <th>Artículo</th>
-                        <th>Categoría / Marca</th>
-                        <th style="width:340px;">Acción</th>
+                        <th style="width:160px;">Artículo</th>
+                        <th style="width:130px;">Categoría / Marca</th>
+                        <th style="width:260px;">Acción foto</th>
+                        <th>Descripción</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -196,6 +226,7 @@ class CLC_Fotos {
                         $foto_url = get_the_post_thumbnail_url($post_id, 'thumbnail');
                         $categorias = wp_get_post_terms($post_id, 'categoria_producto', ['fields' => 'names']);
                         $marcas = wp_get_post_terms($post_id, 'marca_producto', ['fields' => 'names']);
+                        $descripcion_actual = get_post_field('post_content', $post_id);
                         ?>
                         <tr>
                             <td>
@@ -208,11 +239,11 @@ class CLC_Fotos {
                             <td><?php the_title(); ?></td>
                             <td><?php echo esc_html(implode(' / ', array_filter([$categorias[0] ?? '', $marcas[0] ?? '']))); ?></td>
                             <td>
-                                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" enctype="multipart/form-data" style="display:flex;gap:6px;align-items:center;">
+                                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" enctype="multipart/form-data" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
                                     <input type="hidden" name="action" value="clc_subir_foto">
                                     <?php wp_nonce_field('clc_subir_foto', 'clc_foto_nonce'); ?>
                                     <input type="hidden" name="clc_post_id" value="<?php echo esc_attr($post_id); ?>">
-                                    <input type="file" name="clc_foto" accept="image/png,image/jpeg" style="max-width:170px;">
+                                    <input type="file" name="clc_foto" accept="image/png,image/jpeg" style="max-width:150px;">
                                     <button type="submit" class="button button-primary">Subir</button>
                                 </form>
                                 <?php if ($foto_url): ?>
@@ -225,9 +256,22 @@ class CLC_Fotos {
                                     </form>
                                 <?php endif; ?>
                             </td>
+                            <td>
+                                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                                    <input type="hidden" name="action" value="clc_guardar_descripcion">
+                                    <?php wp_nonce_field('clc_guardar_descripcion', 'clc_desc_nonce'); ?>
+                                    <input type="hidden" name="clc_post_id" value="<?php echo esc_attr($post_id); ?>">
+                                    <textarea name="clc_descripcion" maxlength="500" rows="3" style="width:100%;font-size:12px;" placeholder="Sin descripción todavía..."><?php echo esc_textarea($descripcion_actual); ?></textarea>
+                                    <div style="display:flex;gap:6px;margin-top:4px;align-items:center;">
+                                        <button type="submit" class="button button-primary">Guardar</button>
+                                        <button type="submit" name="clc_regenerar" value="1" class="button" title="Genera de nuevo con marca/modelo/specs, pisa lo que esté escrito">↻ Regenerar</button>
+                                        <span style="font-size:11px;color:#999;"><?php echo esc_html(mb_strlen($descripcion_actual)); ?>/500</span>
+                                    </div>
+                                </form>
+                            </td>
                         </tr>
                     <?php endwhile; wp_reset_postdata(); else: ?>
-                        <tr><td colspan="4">No hay artículos con este filtro.</td></tr>
+                        <tr><td colspan="5">No hay artículos con este filtro.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
