@@ -81,7 +81,11 @@ class CLC_Xlsx_Reader {
             $rid = (string) $attrs_r['id'];
             $target = $mapa_rels[$rid] ?? null;
             if ($target) {
-                $this->hojas[$nombre] = 'xl/' . ltrim($target, '/');
+                // Algunos generadores (ej. openpyxl) usan ruta absoluta "/xl/worksheets/sheetN.xml";
+                // otros (Excel/LibreOffice) usan ruta relativa "worksheets/sheetN.xml". Soportamos ambas.
+                $this->hojas[$nombre] = (strpos($target, '/') === 0)
+                    ? ltrim($target, '/')
+                    : 'xl/' . $target;
             }
         }
     }
