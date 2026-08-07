@@ -3,8 +3,8 @@ if (!defined('ABSPATH')) exit;
 
 /**
  * Importador de Excel (una hoja = una marca, normalmente).
- * Requiere PhpSpreadsheet vía Composer (vendor/autoload.php en la raíz del plugin).
- * Si no está instalado, la pantalla de importación avisa cómo instalarlo.
+ * Usa CLC_Xlsx_Reader (sin dependencias externas) — no requiere Composer ni configuración
+ * previa, funciona apenas se activa el plugin.
  */
 class CLC_Importer {
 
@@ -58,22 +58,18 @@ class CLC_Importer {
     }
 
     public static function render_page() {
-        $vendor_ok = file_exists(CLC_PATH . 'vendor/autoload.php');
         ?>
         <div class="wrap">
             <h1>Importar catálogo desde Excel</h1>
 
-            <?php if (!$vendor_ok): ?>
-                <div class="notice notice-error">
-                    <p><strong>Falta una dependencia.</strong> Este importador necesita la librería PhpSpreadsheet.
-                    Desde Plesk, en la carpeta del plugin (<code>wp-content/plugins/casa-litani-catalogo</code>),
-                    corré: <code>composer require phpoffice/phpspreadsheet</code>.</p>
-                </div>
-            <?php endif; ?>
-
             <?php if (isset($_GET['resultado'])): ?>
                 <div class="notice notice-success">
                     <p><?php echo esc_html(urldecode($_GET['resultado'])); ?></p>
+                </div>
+            <?php endif; ?>
+            <?php if (isset($_GET['error'])): ?>
+                <div class="notice notice-error">
+                    <p><?php echo esc_html(urldecode($_GET['error'])); ?></p>
                 </div>
             <?php endif; ?>
 
@@ -84,7 +80,7 @@ class CLC_Importer {
                 <input type="hidden" name="action" value="clc_importar_excel">
                 <?php wp_nonce_field('clc_importar_excel', 'clc_importar_nonce'); ?>
                 <p><input type="file" name="clc_excel" accept=".xlsx" required></p>
-                <p><button type="submit" class="button button-primary" <?php disabled(!$vendor_ok); ?>>Importar</button></p>
+                <p><button type="submit" class="button button-primary">Importar</button></p>
             </form>
 
             <h2>Mapeo de hojas actual</h2>
@@ -106,25 +102,27 @@ class CLC_Importer {
         }
         check_admin_referer('clc_importar_excel', 'clc_importar_nonce');
 
-        if (!file_exists(CLC_PATH . 'vendor/autoload.php')) {
-            wp_die('Falta instalar PhpSpreadsheet (composer require phpoffice/phpspreadsheet) en la carpeta del plugin.');
-        }
-        require_once CLC_PATH . 'vendor/autoload.php';
-
         if (empty($_FILES['clc_excel']['tmp_name'])) {
-            wp_die('No se recibió ningún archivo.');
+            self::redirigir_error('No se recibió ningún archivo.');
+        }
+        if (!class_exists('ZipArchive')) {
+            self::redirigir_error('Falta la extensión "zip" de PHP en el hosting; hablalo con soporte de Plesk.');
         }
 
-        $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader('Xlsx');
-        $spreadsheet = $reader->load($_FILES['clc_excel']['tmp_name']);
-        $mapeo = self::mapeo_default();
+        $lector = CLC_Xlsx_Reader::abrir($_FILES['clc_excel']['tmp_name']);
+        if (!$lector) {
+            self::redirigir_error('No se pudo leer el archivo. Verificá que sea un .xlsx válido.');
+        }
 
+        $mapeo = self::mapeo_default();
         $creados = 0;
         $actualizados = 0;
+        $hojas_ignoradas = [];
 
-        foreach ($spreadsheet->getSheetNames() as $nombre_hoja) {
+        foreach ($lector->nombres_de_hoja() as $nombre_hoja) {
             $clave = strtolower(trim($nombre_hoja));
             if (!isset($mapeo[$clave])) {
+                $hojas_ignoradas[] = $nombre_hoja;
                 continue; // hoja sin mapeo conocido: se ignora, se revisa a mano
             }
             [$nombre_categoria, $marca_config] = $mapeo[$clave];
@@ -133,36 +131,21 @@ class CLC_Importer {
             $categoria_term = self::obtener_o_crear_termino($nombre_categoria, 'categoria_producto');
             $marca_term = self::obtener_o_crear_termino($marca_fija, 'marca_producto');
 
-            $sheet = $spreadsheet->getSheetByName($nombre_hoja);
-            $filas = $sheet->toArray(null, true, true, true);
+            $filas = $lector->filas_de_hoja($nombre_hoja);
 
-            $fila_header = self::detectar_fila_header($filas);
-            if ($fila_header === null) {
-                continue;
-            }
-
-            $encabezados = $filas[$fila_header];
-            $col_precio = self::detectar_columna_precio($encabezados);
-
-            foreach ($filas as $num_fila => $fila) {
-                if ($num_fila <= $fila_header) {
+            foreach ($filas as $fila) {
+                if (!self::es_fila_de_producto($fila, $nombre_hoja)) {
                     continue;
                 }
-                $celdas = array_values($fila);
-                $nombre_articulo = trim((string) reset($celdas));
-                if ($nombre_articulo === '') {
-                    continue;
-                }
+                $nombre_articulo = trim((string) $fila[0]);
 
-                // Arma la descripción con el resto de columnas, salvo la de precio
+                // Descripción: el resto de columnas, salvo lo que sea precio (contiene "dolar")
                 $partes = [];
                 foreach ($fila as $col => $valor) {
-                    if ($col === array_key_first($fila)) continue; // ya es el nombre
-                    if ($col === $col_precio) continue; // no publicamos precio
+                    if ($col === 0) continue;
                     $valor = trim((string) $valor);
-                    if ($valor !== '') {
-                        $partes[] = $valor;
-                    }
+                    if ($valor === '' || mb_strlen($valor) < 2 || stripos($valor, 'dolar') !== false) continue;
+                    $partes[] = $valor;
                 }
                 $descripcion = implode(' / ', $partes);
 
@@ -172,31 +155,53 @@ class CLC_Importer {
             }
         }
 
+        $lector->cerrar();
+
         $mensaje = "Importación completa: {$creados} artículos nuevos, {$actualizados} actualizados.";
+        if (!empty($hojas_ignoradas)) {
+            $mensaje .= ' Hojas sin mapear (ignoradas): ' . implode(', ', $hojas_ignoradas) . '.';
+        }
         wp_safe_redirect(add_query_arg('resultado', urlencode($mensaje), admin_url('edit.php?post_type=articulo&page=clc-importar')));
         exit;
     }
 
-    private static function detectar_fila_header($filas) {
-        foreach ($filas as $num_fila => $fila) {
-            foreach ($fila as $valor) {
-                $v = strtolower(trim((string) $valor));
-                if (in_array($v, ['modelo', 'marca'], true)) {
-                    return $num_fila;
-                }
-            }
-        }
-        return null;
+    private static function redirigir_error($mensaje) {
+        wp_safe_redirect(add_query_arg('error', urlencode($mensaje), admin_url('edit.php?post_type=articulo&page=clc-importar')));
+        exit;
     }
 
-    private static function detectar_columna_precio($encabezados) {
-        foreach ($encabezados as $col => $valor) {
-            $v = strtolower(trim((string) $valor));
-            if (in_array($v, ['monto', 'precio'], true)) {
-                return $col;
+    /**
+     * Decide si una fila es un producto real, filtrando encabezados, títulos,
+     * notas al pie ("Obs: ...") y basura de celdas sueltas en otras columnas
+     * (ej. "DZ", "x", "10" que quedaron tipeadas fuera de la tabla).
+     */
+    private static function es_fila_de_producto($fila, $nombre_hoja) {
+        // Los productos siempre arrancan en la columna A; todo lo que no
+        // empiece ahí es ruido (números/letras sueltas en otra columna).
+        if (!array_key_exists(0, $fila)) {
+            return false;
+        }
+        $valor = trim((string) $fila[0]);
+        if ($valor === '' || mb_strlen($valor) < 3) {
+            return false;
+        }
+        $bajo = mb_strtolower($valor);
+
+        if (str_starts_with($bajo, 'listado')) return false;
+        if (str_starts_with($bajo, 'obs')) return false;
+        if (str_contains($bajo, 'cotiza')) return false;
+        if ($bajo === mb_strtolower(trim($nombre_hoja))) return false; // ej. "PROYECTOR" solo, sin datos reales
+
+        // Fila de encabezado: alguna celda de la fila es literalmente un nombre de columna,
+        // aunque no sea la primera (ej. "RELOJ GARMIN | Monto" en vez de "Modelo | Monto").
+        $etiquetas_encabezado = ['modelo', 'marca', 'monto', 'precio', 'ram', 'memoria'];
+        foreach ($fila as $celda) {
+            if (in_array(mb_strtolower(trim((string) $celda)), $etiquetas_encabezado, true)) {
+                return false;
             }
         }
-        return null;
+
+        return true;
     }
 
     private static function obtener_o_crear_termino($nombre, $taxonomia) {
