@@ -7,6 +7,7 @@ get_header();
 ?>
 
 <main class="clc-single-articulo" style="max-width:800px;margin:40px auto;padding:0 16px;">
+    <?php echo do_shortcode('[clc_boton_inicio]'); ?>
     <?php while (have_posts()): the_post(); ?>
         <?php $marcas = get_the_terms(get_the_ID(), 'marca_producto'); ?>
         <?php $categorias = get_the_terms(get_the_ID(), 'categoria_producto'); ?>

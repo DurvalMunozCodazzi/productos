@@ -13,6 +13,8 @@ $marca_term = $marca_slug ? get_term_by('slug', $marca_slug, 'marca_producto') :
 
 <main class="clc-archivo-categoria" style="max-width:1080px;margin:40px auto;padding:0 20px;">
 
+    <?php echo do_shortcode('[clc_boton_inicio]'); ?>
+
     <nav style="font-size:13px;color:#777;margin-bottom:20px;">
         <a href="<?php echo esc_url(home_url('/catalogo/')); ?>">Catálogo</a>
         <?php if ($marca_term): ?>

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Casa Litani - Catálogo
  * Description: Catálogo de productos (sin precios) con categorías, marcas, importador de Excel y consulta por WhatsApp.
- * Version: 2.1.0
+ * Version: 2.2.0
  * Author: Durval Muñoz Codazzi - Web Sobre Ruedas
  * Author URI: https://websobreruedas.com
  */
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 define('CLC_PATH', plugin_dir_path(__FILE__));
 define('CLC_URL', plugin_dir_url(__FILE__));
-define('CLC_VERSION', '2.1.0');
+define('CLC_VERSION', '2.2.0');
 
 require_once CLC_PATH . 'includes/class-clc-post-type.php';
 require_once CLC_PATH . 'includes/class-clc-whatsapp.php';
@@ -51,7 +51,7 @@ function clc_crear_pagina_catalogo() {
     if ($existente) {
         return;
     }
-    $contenido = "<h2>Explorá por categoría</h2>\n[clc_categorias]\n\n<h2>O buscá directo</h2>\n[clc_filtro_catalogo]\n\n[clc_credito]";
+    $contenido = "[clc_boton_inicio]\n\n<h2>Explorá por categoría</h2>\n[clc_categorias]\n\n<h2>O buscá directo</h2>\n[clc_filtro_catalogo]\n\n[clc_credito]";
     wp_insert_post([
         'post_title' => 'Catálogo',
         'post_name' => 'catalogo',
