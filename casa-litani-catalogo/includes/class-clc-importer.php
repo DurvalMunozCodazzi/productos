@@ -238,6 +238,11 @@ class CLC_Importer {
         ];
 
         if ($existente) {
+            // Si ya tiene una descripción generada/editada a mano, no la pisamos al reimportar
+            // el mismo Excel — solo completamos descripción en artículos que todavía no tienen.
+            if (!empty(get_post_meta($existente->ID, '_clc_descripcion_generada', true)) || trim($existente->post_content) !== '') {
+                unset($datos_post['post_content']);
+            }
             $datos_post['ID'] = $existente->ID;
             wp_update_post($datos_post);
             $post_id = $existente->ID;
