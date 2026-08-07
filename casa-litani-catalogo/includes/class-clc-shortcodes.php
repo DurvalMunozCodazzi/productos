@@ -13,10 +13,10 @@ class CLC_Shortcodes {
         add_shortcode('clc_boton_inicio', [__CLASS__, 'shortcode_boton_inicio']);
     }
 
-    /** [clc_boton_inicio] — link "Inicio" para volver a la landing, mismo estilo/colores que sus otras páginas */
+    /** [clc_boton_inicio] — barra superior fija con botón grande "Inicio", imposible de pasar por alto */
     public static function shortcode_boton_inicio() {
-        return '<div style="margin-bottom:14px;">'
-            . '<a href="' . esc_url(home_url('/')) . '" style="color:#71585d;font-size:.9rem;font-weight:600;text-decoration:none;">'
+        return '<div style="position:sticky;top:0;z-index:999;background:#fffaf9;border-bottom:1px solid #f0dbe0;padding:12px 0;margin:0 0 20px 0;display:flex;justify-content:center;">'
+            . '<a href="' . esc_url(home_url('/')) . '" style="display:inline-flex;align-items:center;gap:8px;background:#e2542a;color:#fff;font-size:15px;font-weight:700;text-decoration:none;padding:10px 24px;border-radius:100px;">'
             . '&larr; Inicio'
             . '</a></div>';
     }

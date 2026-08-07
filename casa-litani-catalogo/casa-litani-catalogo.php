@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Casa Litani - Catálogo
  * Description: Catálogo de productos (sin precios) con categorías, marcas, importador de Excel y consulta por WhatsApp.
- * Version: 2.2.0
+ * Version: 2.3.0
  * Author: Durval Muñoz Codazzi - Web Sobre Ruedas
  * Author URI: https://websobreruedas.com
  */
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 define('CLC_PATH', plugin_dir_path(__FILE__));
 define('CLC_URL', plugin_dir_url(__FILE__));
-define('CLC_VERSION', '2.2.0');
+define('CLC_VERSION', '2.3.0');
 
 require_once CLC_PATH . 'includes/class-clc-post-type.php';
 require_once CLC_PATH . 'includes/class-clc-whatsapp.php';
@@ -45,10 +45,20 @@ function clc_activate() {
 }
 register_activation_hook(__FILE__, 'clc_activate');
 
-/** Crea automáticamente la página "Catálogo" con el shortcode de categorías, si todavía no existe. */
+/**
+ * Crea automáticamente la página "Catálogo" con el shortcode de categorías si no existe.
+ * Si ya existe pero le falta el botón de Inicio (por ejemplo, se creó con una versión
+ * anterior del plugin), se lo agrega arriba sin tocar el resto del contenido.
+ */
 function clc_crear_pagina_catalogo() {
     $existente = get_page_by_path('catalogo');
     if ($existente) {
+        if (strpos($existente->post_content, '[clc_boton_inicio]') === false) {
+            wp_update_post([
+                'ID' => $existente->ID,
+                'post_content' => "[clc_boton_inicio]\n\n" . $existente->post_content,
+            ]);
+        }
         return;
     }
     $contenido = "[clc_boton_inicio]\n\n<h2>Explorá por categoría</h2>\n[clc_categorias]\n\n<h2>O buscá directo</h2>\n[clc_filtro_catalogo]\n\n[clc_credito]";
