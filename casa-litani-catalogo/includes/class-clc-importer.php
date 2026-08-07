@@ -132,6 +132,17 @@ class CLC_Importer {
         $creados = 0;
         $actualizados = 0;
         $hojas_ignoradas = [];
+        $posibles_duplicados = [];
+
+        // Nombres existentes ANTES de importar, para detectar duplicados por typo
+        // (ej. "Samsung A55" vs "Samsumg A55") sin bloquear la importación.
+        $titulos_existentes = get_posts([
+            'post_type' => 'articulo',
+            'post_status' => 'publish',
+            'posts_per_page' => -1,
+            'fields' => 'ids',
+        ]);
+        $titulos_existentes = array_map('get_the_title', $titulos_existentes);
 
         foreach ($lector->nombres_de_hoja() as $nombre_hoja) {
             $clave = strtolower(trim($nombre_hoja));
@@ -163,8 +174,23 @@ class CLC_Importer {
                 }
                 $descripcion = implode(' / ', $partes);
 
+                // Si no es un título ya existente exacto, buscamos si se parece mucho a uno que sí existe
+                // (posible duplicado por error de tipeo en el Excel del cliente) — no bloquea, solo avisa.
+                if (!in_array($nombre_articulo, $titulos_existentes, true)) {
+                    foreach ($titulos_existentes as $titulo_existente) {
+                        similar_text(mb_strtolower($nombre_articulo), mb_strtolower($titulo_existente), $porcentaje);
+                        if ($porcentaje >= 85 && mb_strtolower($nombre_articulo) !== mb_strtolower($titulo_existente)) {
+                            $posibles_duplicados[] = "\"{$nombre_articulo}\" ≈ \"{$titulo_existente}\"";
+                            break;
+                        }
+                    }
+                }
+
                 $resultado = self::crear_o_actualizar_articulo($nombre_articulo, $descripcion, $categoria_term, $marca_term);
-                if ($resultado === 'creado') $creados++;
+                if ($resultado === 'creado') {
+                    $creados++;
+                    $titulos_existentes[] = $nombre_articulo;
+                }
                 if ($resultado === 'actualizado') $actualizados++;
             }
         }
@@ -174,6 +200,10 @@ class CLC_Importer {
         $mensaje = "Importación completa: {$creados} artículos nuevos, {$actualizados} actualizados.";
         if (!empty($hojas_ignoradas)) {
             $mensaje .= ' Hojas sin mapear (ignoradas): ' . implode(', ', $hojas_ignoradas) . '.';
+        }
+        if (!empty($posibles_duplicados)) {
+            $posibles_duplicados = array_slice(array_unique($posibles_duplicados), 0, 15);
+            $mensaje .= ' ⚠ Posibles duplicados a revisar a mano: ' . implode(' | ', $posibles_duplicados) . '.';
         }
         wp_safe_redirect(add_query_arg('resultado', urlencode($mensaje), admin_url('edit.php?post_type=articulo&page=clc-importar')));
         exit;

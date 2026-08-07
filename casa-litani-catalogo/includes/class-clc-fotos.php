@@ -16,9 +16,26 @@ class CLC_Fotos {
     public static function init() {
         add_action('admin_menu', [__CLASS__, 'add_menu']);
         add_action('admin_post_clc_subir_foto', [__CLASS__, 'guardar_foto_manual']);
+        add_action('admin_post_clc_restaurar_foto_anterior', [__CLASS__, 'restaurar_foto_anterior']);
         add_action('admin_post_clc_guardar_descripcion', [__CLASS__, 'guardar_descripcion_manual']);
+        add_action('admin_post_clc_marcar_verificado', [__CLASS__, 'marcar_verificado']);
         add_action('wp_ajax_clc_pexels_tanda', [__CLASS__, 'ajax_tanda']);
         add_action('admin_enqueue_scripts', [__CLASS__, 'enqueue']);
+    }
+
+    /** Guarda la foto actual (si hay) en un historial antes de reemplazarla, para poder deshacer. */
+    private static function archivar_foto_anterior($post_id) {
+        $actual = get_post_thumbnail_id($post_id);
+        if (!$actual) {
+            return;
+        }
+        $historial = get_post_meta($post_id, '_clc_historial_fotos', true);
+        if (!is_array($historial)) {
+            $historial = [];
+        }
+        array_unshift($historial, $actual);
+        $historial = array_slice(array_unique($historial), 0, 5);
+        update_post_meta($post_id, '_clc_historial_fotos', $historial);
     }
 
     public static function add_menu() {
@@ -99,10 +116,59 @@ class CLC_Fotos {
             exit;
         }
 
+        self::archivar_foto_anterior($post_id);
         set_post_thumbnail($post_id, $adjunto_id);
         delete_post_meta($post_id, '_clc_pexels_fotografo');
         delete_post_meta($post_id, '_clc_pexels_fotografo_url');
         update_post_meta($post_id, '_clc_estado', 'activo');
+
+        wp_safe_redirect(add_query_arg('guardado', '1', wp_get_referer() ?: admin_url('edit.php?post_type=articulo&page=clc-fotos')));
+        exit;
+    }
+
+    /** Restaura la foto anterior guardada en el historial (deshacer un reemplazo). */
+    public static function restaurar_foto_anterior() {
+        if (!current_user_can('manage_options')) {
+            wp_die('No autorizado');
+        }
+        check_admin_referer('clc_restaurar_foto_anterior', 'clc_restaurar_foto_nonce');
+
+        $post_id = (int) ($_POST['clc_post_id'] ?? 0);
+        if (!$post_id) {
+            wp_die('Falta el artículo');
+        }
+
+        $historial = get_post_meta($post_id, '_clc_historial_fotos', true);
+        if (!is_array($historial) || empty($historial)) {
+            wp_safe_redirect(add_query_arg('error', 'sinhistorial', wp_get_referer() ?: admin_url('edit.php?post_type=articulo&page=clc-fotos')));
+            exit;
+        }
+
+        $anterior_id = array_shift($historial);
+        update_post_meta($post_id, '_clc_historial_fotos', $historial);
+        set_post_thumbnail($post_id, $anterior_id);
+
+        wp_safe_redirect(add_query_arg('guardado', '1', wp_get_referer() ?: admin_url('edit.php?post_type=articulo&page=clc-fotos')));
+        exit;
+    }
+
+    /** Marca/desmarca un artículo como "verificado" — excluido de la carga automática por Pexels. */
+    public static function marcar_verificado() {
+        if (!current_user_can('manage_options')) {
+            wp_die('No autorizado');
+        }
+        check_admin_referer('clc_marcar_verificado', 'clc_verificado_nonce');
+
+        $post_id = (int) ($_POST['clc_post_id'] ?? 0);
+        if (!$post_id) {
+            wp_die('Falta el artículo');
+        }
+
+        if (!empty($_POST['clc_verificado'])) {
+            update_post_meta($post_id, '_clc_verificado', '1');
+        } else {
+            delete_post_meta($post_id, '_clc_verificado');
+        }
 
         wp_safe_redirect(add_query_arg('guardado', '1', wp_get_referer() ?: admin_url('edit.php?post_type=articulo&page=clc-fotos')));
         exit;
@@ -214,10 +280,11 @@ class CLC_Fotos {
                 <thead>
                     <tr>
                         <th style="width:70px;">Foto</th>
-                        <th style="width:160px;">Artículo</th>
-                        <th style="width:130px;">Categoría / Marca</th>
-                        <th style="width:260px;">Acción foto</th>
+                        <th style="width:150px;">Artículo</th>
+                        <th style="width:120px;">Categoría / Marca</th>
+                        <th style="width:250px;">Acción foto</th>
                         <th>Descripción</th>
+                        <th style="width:90px;">Verificado</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -227,6 +294,9 @@ class CLC_Fotos {
                         $categorias = wp_get_post_terms($post_id, 'categoria_producto', ['fields' => 'names']);
                         $marcas = wp_get_post_terms($post_id, 'marca_producto', ['fields' => 'names']);
                         $descripcion_actual = get_post_field('post_content', $post_id);
+                        $verificado = (bool) get_post_meta($post_id, '_clc_verificado', true);
+                        $historial = get_post_meta($post_id, '_clc_historial_fotos', true);
+                        $tiene_historial = is_array($historial) && !empty($historial);
                         ?>
                         <tr>
                             <td>
@@ -247,12 +317,20 @@ class CLC_Fotos {
                                     <button type="submit" class="button button-primary">Subir</button>
                                 </form>
                                 <?php if ($foto_url): ?>
-                                    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="margin-top:4px;">
+                                    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="margin-top:4px;display:inline-block;">
                                         <input type="hidden" name="action" value="clc_subir_foto">
                                         <?php wp_nonce_field('clc_subir_foto', 'clc_foto_nonce'); ?>
                                         <input type="hidden" name="clc_post_id" value="<?php echo esc_attr($post_id); ?>">
                                         <input type="hidden" name="clc_quitar_foto" value="1">
                                         <button type="submit" class="button button-link-delete">Quitar foto</button>
+                                    </form>
+                                <?php endif; ?>
+                                <?php if ($tiene_historial): ?>
+                                    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="margin-top:4px;display:inline-block;">
+                                        <input type="hidden" name="action" value="clc_restaurar_foto_anterior">
+                                        <?php wp_nonce_field('clc_restaurar_foto_anterior', 'clc_restaurar_foto_nonce'); ?>
+                                        <input type="hidden" name="clc_post_id" value="<?php echo esc_attr($post_id); ?>">
+                                        <button type="submit" class="button" title="Vuelve a la foto que tenía antes del último reemplazo">↺ Deshacer foto</button>
                                     </form>
                                 <?php endif; ?>
                             </td>
@@ -269,9 +347,20 @@ class CLC_Fotos {
                                     </div>
                                 </form>
                             </td>
+                            <td>
+                                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                                    <input type="hidden" name="action" value="clc_marcar_verificado">
+                                    <?php wp_nonce_field('clc_marcar_verificado', 'clc_verificado_nonce'); ?>
+                                    <input type="hidden" name="clc_post_id" value="<?php echo esc_attr($post_id); ?>">
+                                    <label style="display:flex;align-items:center;gap:4px;font-size:11px;">
+                                        <input type="checkbox" name="clc_verificado" value="1" onchange="this.form.submit()" <?php checked($verificado); ?>>
+                                        ✔ Listo
+                                    </label>
+                                </form>
+                            </td>
                         </tr>
                     <?php endwhile; wp_reset_postdata(); else: ?>
-                        <tr><td colspan="5">No hay artículos con este filtro.</td></tr>
+                        <tr><td colspan="6">No hay artículos con este filtro.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>

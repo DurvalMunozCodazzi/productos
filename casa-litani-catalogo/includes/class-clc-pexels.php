@@ -158,7 +158,10 @@ class CLC_Pexels {
             'post_type' => 'articulo',
             'posts_per_page' => $limite,
             'post_status' => 'publish',
-            'meta_query' => [['key' => '_thumbnail_id', 'compare' => 'NOT EXISTS']],
+            'meta_query' => [
+                ['key' => '_thumbnail_id', 'compare' => 'NOT EXISTS'],
+                ['key' => '_clc_verificado', 'compare' => 'NOT EXISTS'],
+            ],
             'fields' => 'ids',
         ]);
 
