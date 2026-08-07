@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Casa Litani - Catálogo
  * Description: Catálogo de productos (sin precios) con categorías, marcas, importador de Excel y consulta por WhatsApp.
- * Version: 2.3.0
+ * Version: 3.0.0
  * Author: Durval Muñoz Codazzi - Web Sobre Ruedas
  * Author URI: https://websobreruedas.com
  */
@@ -13,8 +13,9 @@ if (!defined('ABSPATH')) {
 
 define('CLC_PATH', plugin_dir_path(__FILE__));
 define('CLC_URL', plugin_dir_url(__FILE__));
-define('CLC_VERSION', '2.3.0');
+define('CLC_VERSION', '3.0.0');
 
+require_once CLC_PATH . 'includes/class-clc-layout.php';
 require_once CLC_PATH . 'includes/class-clc-post-type.php';
 require_once CLC_PATH . 'includes/class-clc-whatsapp.php';
 require_once CLC_PATH . 'includes/class-clc-settings.php';
@@ -46,26 +47,17 @@ function clc_activate() {
 register_activation_hook(__FILE__, 'clc_activate');
 
 /**
- * Crea automáticamente la página "Catálogo" con el shortcode de categorías si no existe.
- * Si ya existe pero le falta el botón de Inicio (por ejemplo, se creó con una versión
- * anterior del plugin), se lo agrega arriba sin tocar el resto del contenido.
+ * Crea automáticamente la página "Catálogo" si no existe todavía. Solo hace falta
+ * que exista para que la URL /catalogo/ tenga dónde apuntar — el contenido real
+ * lo arma templates/catalogo.php (vía template_include), que ignora el post_content.
  */
 function clc_crear_pagina_catalogo() {
-    $existente = get_page_by_path('catalogo');
-    if ($existente) {
-        if (strpos($existente->post_content, '[clc_boton_inicio]') === false) {
-            wp_update_post([
-                'ID' => $existente->ID,
-                'post_content' => "[clc_boton_inicio]\n\n" . $existente->post_content,
-            ]);
-        }
+    if (get_page_by_path('catalogo')) {
         return;
     }
-    $contenido = "[clc_boton_inicio]\n\n<h2>Explorá por categoría</h2>\n[clc_categorias]\n\n<h2>O buscá directo</h2>\n[clc_filtro_catalogo]\n\n[clc_credito]";
     wp_insert_post([
         'post_title' => 'Catálogo',
         'post_name' => 'catalogo',
-        'post_content' => $contenido,
         'post_status' => 'publish',
         'post_type' => 'page',
     ]);
@@ -92,6 +84,12 @@ function clc_template_include($template) {
     }
     if (is_tax('categoria_producto')) {
         $custom = CLC_PATH . 'templates/taxonomy-categoria_producto.php';
+        if (file_exists($custom)) {
+            return $custom;
+        }
+    }
+    if (is_page('catalogo')) {
+        $custom = CLC_PATH . 'templates/catalogo.php';
         if (file_exists($custom)) {
             return $custom;
         }

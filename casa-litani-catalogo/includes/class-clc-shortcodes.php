@@ -10,15 +10,6 @@ class CLC_Shortcodes {
         add_shortcode('clc_boton_whatsapp', [__CLASS__, 'shortcode_boton_whatsapp']);
         add_shortcode('clc_franja_categorias', [__CLASS__, 'shortcode_franja_categorias']);
         add_shortcode('clc_credito', [__CLASS__, 'shortcode_credito']);
-        add_shortcode('clc_boton_inicio', [__CLASS__, 'shortcode_boton_inicio']);
-    }
-
-    /** [clc_boton_inicio] — barra superior fija con botón grande "Inicio", imposible de pasar por alto */
-    public static function shortcode_boton_inicio() {
-        return '<div style="position:sticky;top:0;z-index:999;background:#fffaf9;border-bottom:1px solid #f0dbe0;padding:12px 0;margin:0 0 20px 0;display:flex;justify-content:center;">'
-            . '<a href="' . esc_url(home_url('/')) . '" style="display:inline-flex;align-items:center;gap:8px;background:#e2542a;color:#fff;font-size:15px;font-weight:700;text-decoration:none;padding:10px 24px;border-radius:100px;">'
-            . '&larr; Inicio'
-            . '</a></div>';
     }
 
     /** [clc_credito] — misma línea de autoría que en el pie de la landing, con el logo de Web Sobre Ruedas */
