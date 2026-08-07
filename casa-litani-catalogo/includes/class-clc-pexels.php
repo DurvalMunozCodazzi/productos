@@ -91,12 +91,52 @@ class CLC_Pexels {
         return (int) $id;
     }
 
-    /** Término de búsqueda: nombre del artículo + marca, para que Pexels traiga algo relevante. */
-    private static function termino_busqueda($post_id) {
+    /** Palabra genérica en inglés por categoría, para el plan B cuando el nombre es puro código de producto. */
+    private static function termino_generico_categoria($categoria) {
+        $mapa = [
+            'Celulares' => 'smartphone',
+            'Ordenadores' => 'laptop computer',
+            'Audio' => 'headphones speaker',
+            'Gaming' => 'gaming console controller',
+            'Pantallas' => 'television screen',
+            'Hogar' => 'home appliance',
+            'Belleza' => 'beauty care',
+            'Movilidad' => 'electric scooter',
+            'Accesorios Varios' => 'electronics accessories',
+        ];
+        return $mapa[$categoria] ?? 'electronics';
+    }
+
+    /**
+     * Limpia el nombre del artículo sacando códigos de producto (mezclas de letras+números
+     * tipo "LAC16250-7469B", "LDC-15250-7982BLK") que Pexels no puede buscar en lenguaje natural.
+     */
+    private static function limpiar_nombre($nombre) {
+        $palabras = preg_split('/\s+/', $nombre);
+        $limpias = array_filter($palabras, function ($p) {
+            $p = trim($p, '/"\'');
+            if ($p === '') return false;
+            // Descartamos tokens tipo SKU: mezcla de letras y números de 4+ caracteres, o con guión + números.
+            if (preg_match('/^[A-Za-z0-9]{4,}$/', $p) && preg_match('/[A-Za-z]/', $p) && preg_match('/\d/', $p)) return false;
+            if (preg_match('/^[A-Za-z]*\d+[A-Za-z]*-[A-Za-z0-9]+$/', $p)) return false;
+            return true;
+        });
+        return trim(implode(' ', $limpias));
+    }
+
+    /** Devuelve [término específico, término genérico de respaldo] para un artículo. */
+    private static function terminos_busqueda($post_id) {
         $nombre = get_the_title($post_id);
         $marcas = wp_get_post_terms($post_id, 'marca_producto', ['fields' => 'names']);
+        $categorias = wp_get_post_terms($post_id, 'categoria_producto', ['fields' => 'names']);
         $marca = $marcas[0] ?? '';
-        return trim($nombre . ' ' . $marca . ' producto');
+        $categoria = $categorias[0] ?? '';
+
+        $nombre_limpio = self::limpiar_nombre($nombre);
+        $especifico = trim($marca . ' ' . $nombre_limpio . ' producto');
+        $generico = trim($marca . ' ' . self::termino_generico_categoria($categoria));
+
+        return [$especifico, $generico];
     }
 
     /** Procesa una tanda de artículos sin foto. Devuelve un resumen para mostrar en el admin. */
@@ -125,7 +165,22 @@ class CLC_Pexels {
         foreach ($query->posts as $post_id) {
             $resumen['revisadas']++;
             $error_busqueda = null;
-            $encontrada = self::buscar(self::termino_busqueda($post_id), $api_key, $error_busqueda);
+            [$termino_especifico, $termino_generico] = self::terminos_busqueda($post_id);
+
+            $encontrada = self::buscar($termino_especifico, $api_key, $error_busqueda);
+
+            // Si el término específico (con el nombre del modelo) no encontró nada, probamos
+            // uno genérico por categoría — pasa seguido con nombres que son puro código de producto.
+            if ((!$encontrada || empty($encontrada['url'])) && $termino_generico !== $termino_especifico) {
+                $error_generico = null;
+                $intento_generico = self::buscar($termino_generico, $api_key, $error_generico);
+                if ($intento_generico && !empty($intento_generico['url'])) {
+                    $encontrada = $intento_generico;
+                    $error_busqueda = null;
+                } elseif ($error_busqueda === null) {
+                    $error_busqueda = $error_generico;
+                }
+            }
 
             if (!$encontrada || empty($encontrada['url'])) {
                 $resumen['sin_match']++;
