@@ -158,9 +158,28 @@ class CLC_Layout {
   var btn = document.getElementById('clc-nav-toggle');
   var menu = document.getElementById('clc-nav-links');
   if (!btn || !menu) return;
-  btn.addEventListener('click', function () {
+
+  function cerrar() {
+    menu.classList.remove('clc-nav-abierto');
+    btn.setAttribute('aria-expanded', 'false');
+  }
+
+  btn.addEventListener('click', function (e) {
+    e.stopPropagation();
     var abierto = menu.classList.toggle('clc-nav-abierto');
     btn.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+  });
+
+  // Se cierra al tocar cualquier link de adentro (aunque sea la misma página) o afuera del menú.
+  menu.addEventListener('click', function (e) {
+    if (e.target.closest('a')) {
+      cerrar();
+    }
+  });
+  document.addEventListener('click', function (e) {
+    if (menu.classList.contains('clc-nav-abierto') && !menu.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
+      cerrar();
+    }
   });
 })();
 </script>
