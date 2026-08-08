@@ -77,7 +77,7 @@ class CLC_Layout {
     .clc-header-wa { padding:12px !important; }
   }
   @media (max-width: 480px) {
-    .wrap { padding-left:18px; padding-right:18px; }
+    .wrap { padding-left:24px; padding-right:24px; }
     .clc-contenido { padding-top:28px; }
     .clc-card { padding:10px; }
     .clc-grid { gap:12px; }
