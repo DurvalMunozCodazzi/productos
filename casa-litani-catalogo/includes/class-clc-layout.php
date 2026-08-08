@@ -34,7 +34,7 @@ class CLC_Layout {
   * { box-sizing: border-box; }
   html, body { max-width: 100%; overflow-x: hidden; }
   body { margin: 0; background: #fffaf9; }
-  img, svg, table { max-width: 100%; }
+  img, svg, table { max-width: 100%; height: auto; }
   a { text-decoration: none; color: inherit; }
   a:hover { color: #c92f52; }
   .cl { --accent:#f9526b; --accent-dark:#c92f52; --accent-2:#b44086; --coral:#ff7b67;

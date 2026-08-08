@@ -25,7 +25,7 @@ CLC_Layout::abrir_pagina(
             </p>
 
             <?php if (has_post_thumbnail()): ?>
-                <?php the_post_thumbnail('large', ['style' => 'width:100%;border-radius:var(--r);']); ?>
+                <?php the_post_thumbnail('large', ['style' => 'width:100%;height:auto;border-radius:var(--r);']); ?>
                 <?php
                 $fotografo = get_post_meta(get_the_ID(), '_clc_pexels_fotografo', true);
                 $fotografo_url = get_post_meta(get_the_ID(), '_clc_pexels_fotografo_url', true);
