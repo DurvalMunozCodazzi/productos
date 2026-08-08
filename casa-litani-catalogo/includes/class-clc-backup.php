@@ -261,6 +261,8 @@ class CLC_Backup {
             $restaurados++;
         }
 
+        CLC_Cache::limpiar_si_corresponde();
+
         $mensaje = "Restaurados {$restaurados} artículos.";
         if ($sin_coincidencia > 0) {
             $mensaje .= " {$sin_coincidencia} del backup no coinciden con ningún artículo actual (título distinto).";

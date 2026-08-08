@@ -196,6 +196,7 @@ class CLC_Importer {
         }
 
         $lector->cerrar();
+        CLC_Cache::limpiar_si_corresponde();
 
         $mensaje = "Importación completa: {$creados} artículos nuevos, {$actualizados} actualizados.";
         if (!empty($hojas_ignoradas)) {
