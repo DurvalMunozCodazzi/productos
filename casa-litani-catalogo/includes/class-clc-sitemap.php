@@ -12,6 +12,15 @@ class CLC_Sitemap {
         add_action('init', [__CLASS__, 'registrar_regla']);
         add_filter('query_vars', [__CLASS__, 'registrar_query_var']);
         add_action('template_redirect', [__CLASS__, 'imprimir_sitemap']);
+        add_filter('robots_txt', [__CLASS__, 'agregar_a_robots'], 10, 2);
+    }
+
+    /** Referencia el sitemap del catálogo en /robots.txt para que Google lo encuentre solo. */
+    public static function agregar_a_robots($salida, $public) {
+        if ('1' !== (string) $public) {
+            return $salida;
+        }
+        return rtrim($salida) . "\n\nSitemap: " . home_url('/catalogo-sitemap.xml') . "\n";
     }
 
     public static function registrar_regla() {

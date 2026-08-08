@@ -11,6 +11,37 @@ class CLC_Shortcodes {
         add_shortcode('clc_boton_compartir', [__CLASS__, 'shortcode_boton_compartir']);
         add_shortcode('clc_franja_categorias', [__CLASS__, 'shortcode_franja_categorias']);
         add_shortcode('clc_credito', [__CLASS__, 'shortcode_credito']);
+        add_shortcode('clc_novedades', [__CLASS__, 'shortcode_novedades']);
+    }
+
+    /** [clc_novedades limite="8"] — últimos artículos cargados, para destacar lo nuevo sin tocar nada a mano. */
+    public static function shortcode_novedades($atts) {
+        $atts = shortcode_atts(['limite' => 8], $atts);
+
+        $query = new WP_Query([
+            'post_type' => 'articulo',
+            'posts_per_page' => (int) $atts['limite'],
+            'orderby' => 'date',
+            'order' => 'DESC',
+            'meta_query' => [['key' => '_clc_estado', 'value' => 'discontinuado', 'compare' => '!=']],
+        ]);
+
+        if (!$query->have_posts()) {
+            return '';
+        }
+
+        ob_start();
+        echo '<div class="clc-grid clc-grid-articulos">';
+        while ($query->have_posts()) {
+            $query->the_post();
+            echo '<a class="clc-card clc-card-articulo" href="' . esc_url(get_permalink()) . '">';
+            echo get_the_post_thumbnail(get_the_ID(), 'medium');
+            echo '<span class="clc-card-titulo">' . esc_html(get_the_title()) . '</span>';
+            echo '</a>';
+        }
+        echo '</div>';
+        wp_reset_postdata();
+        return ob_get_clean();
     }
 
     /** [clc_credito] — misma línea de autoría que en el pie de la landing, con el logo de Web Sobre Ruedas */
