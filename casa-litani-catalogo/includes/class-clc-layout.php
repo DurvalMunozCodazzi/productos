@@ -76,6 +76,12 @@ class CLC_Layout {
     .clc-header-wa-texto { display:none; }
     .clc-header-wa { padding:12px !important; }
   }
+  @media (max-width: 480px) {
+    .wrap { padding-left:18px; padding-right:18px; }
+    .clc-contenido { padding-top:28px; }
+    .clc-card { padding:10px; }
+    .clc-grid { gap:12px; }
+  }
 </style>
 </head>
 <body <?php body_class(); ?>>
@@ -105,7 +111,7 @@ class CLC_Layout {
     </div>
   </div>
 
-  <div class="wrap" style="padding:40px 0 60px;">
+  <div class="wrap clc-contenido" style="padding-top:40px;padding-bottom:60px;">
         <?php
     }
 
