@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Casa Litani - Catálogo
  * Description: Catálogo de productos (sin precios) con categorías, marcas, importador de Excel y consulta por WhatsApp.
- * Version: 3.8.0
+ * Version: 3.9.0
  * Author: Durval Muñoz Codazzi - Web Sobre Ruedas
  * Author URI: https://websobreruedas.com
  */
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 define('CLC_PATH', plugin_dir_path(__FILE__));
 define('CLC_URL', plugin_dir_url(__FILE__));
-define('CLC_VERSION', '3.8.0');
+define('CLC_VERSION', '3.9.0');
 
 require_once CLC_PATH . 'includes/class-clc-layout.php';
 require_once CLC_PATH . 'includes/class-clc-post-type.php';
@@ -28,6 +28,8 @@ require_once CLC_PATH . 'includes/class-clc-pexels.php';
 require_once CLC_PATH . 'includes/class-clc-descripciones.php';
 require_once CLC_PATH . 'includes/class-clc-backup.php';
 require_once CLC_PATH . 'includes/class-clc-exportar.php';
+require_once CLC_PATH . 'includes/class-clc-estadisticas.php';
+require_once CLC_PATH . 'includes/class-clc-imagenes.php';
 
 function clc_init_plugin() {
     CLC_Post_Type::init();
@@ -41,6 +43,8 @@ function clc_init_plugin() {
     CLC_Descripciones::init();
     CLC_Backup::init();
     CLC_Exportar::init();
+    CLC_Estadisticas::init();
+    CLC_Imagenes::init();
 }
 add_action('plugins_loaded', 'clc_init_plugin');
 
@@ -97,6 +101,12 @@ function clc_template_include($template) {
     }
     if (is_page('catalogo')) {
         $custom = CLC_PATH . 'templates/catalogo.php';
+        if (file_exists($custom)) {
+            return $custom;
+        }
+    }
+    if (is_404()) {
+        $custom = CLC_PATH . 'templates/404.php';
         if (file_exists($custom)) {
             return $custom;
         }

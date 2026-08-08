@@ -29,11 +29,15 @@ class CLC_Pexels {
         wp_clear_scheduled_hook('clc_pexels_tanda_horaria');
     }
 
-    /** Busca 1 foto en Pexels para un término (usa la primera coincidencia). */
+    // Descartamos fotos más chicas que esto — evita imágenes borrosas/pixeladas al agrandar en la ficha.
+    const ANCHO_MINIMO = 800;
+    const ALTO_MINIMO = 600;
+
+    /** Busca 1 foto en Pexels para un término (usa la primera coincidencia que cumpla el tamaño mínimo). */
     public static function buscar($query, $api_key, &$error = null) {
         $url = add_query_arg([
             'query' => rawurlencode($query),
-            'per_page' => 1,
+            'per_page' => 5,
             'orientation' => 'landscape',
         ], 'https://api.pexels.com/v1/search');
 
@@ -55,16 +59,26 @@ class CLC_Pexels {
         }
 
         $cuerpo = json_decode(wp_remote_retrieve_body($respuesta), true);
-        if (empty($cuerpo['photos'][0])) {
+        if (empty($cuerpo['photos'])) {
             return null;
         }
 
-        $foto = $cuerpo['photos'][0];
-        return [
-            'url' => $foto['src']['large'] ?? $foto['src']['medium'] ?? '',
-            'fotografo' => $foto['photographer'] ?? '',
-            'fotografo_url' => $foto['photographer_url'] ?? '',
-        ];
+        // De los resultados, nos quedamos con el primero que cumpla el tamaño mínimo.
+        foreach ($cuerpo['photos'] as $foto) {
+            $ancho = (int) ($foto['width'] ?? 0);
+            $alto = (int) ($foto['height'] ?? 0);
+            if ($ancho < self::ANCHO_MINIMO || $alto < self::ALTO_MINIMO) {
+                continue;
+            }
+            return [
+                'url' => $foto['src']['large'] ?? $foto['src']['medium'] ?? '',
+                'fotografo' => $foto['photographer'] ?? '',
+                'fotografo_url' => $foto['photographer_url'] ?? '',
+            ];
+        }
+
+        $error = 'Los resultados de Pexels para este término eran de baja resolución, se descartaron.';
+        return null;
     }
 
     /** Descarga la imagen y la deja cargada en la Media Library. */

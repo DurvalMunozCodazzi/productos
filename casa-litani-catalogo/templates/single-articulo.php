@@ -36,7 +36,10 @@ CLC_Layout::abrir_pagina(get_the_title());
                 <?php the_content(); ?>
             </div>
 
-            <?php echo do_shortcode('[clc_boton_whatsapp]'); ?>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;">
+                <?php echo do_shortcode('[clc_boton_whatsapp]'); ?>
+                <?php echo do_shortcode('[clc_boton_compartir]'); ?>
+            </div>
         <?php endwhile; ?>
     </main>
 <?php

@@ -8,6 +8,7 @@ class CLC_Shortcodes {
         add_shortcode('clc_marcas', [__CLASS__, 'shortcode_marcas']);
         add_shortcode('clc_articulos', [__CLASS__, 'shortcode_articulos']);
         add_shortcode('clc_boton_whatsapp', [__CLASS__, 'shortcode_boton_whatsapp']);
+        add_shortcode('clc_boton_compartir', [__CLASS__, 'shortcode_boton_compartir']);
         add_shortcode('clc_franja_categorias', [__CLASS__, 'shortcode_franja_categorias']);
         add_shortcode('clc_credito', [__CLASS__, 'shortcode_credito']);
     }
@@ -155,5 +156,44 @@ class CLC_Shortcodes {
             return '';
         }
         return '<a class="clc-btn-whatsapp" href="' . esc_url($link) . '" target="_blank" rel="noopener">Consultar</a>';
+    }
+
+    /**
+     * [clc_boton_compartir] — para que el cliente le reenvíe el producto a un comprador
+     * (no va a un número fijo, abre el selector de contactos del celular vía Web Share API,
+     * o WhatsApp genérico si el navegador no soporta compartir nativo).
+     */
+    public static function shortcode_boton_compartir($atts) {
+        $atts = shortcode_atts(['post_id' => get_the_ID()], $atts);
+        $post_id = (int) $atts['post_id'];
+        $nombre = get_the_title($post_id);
+        $url = get_permalink($post_id);
+        $texto = 'Mirá este producto en Casa Litani: "' . $nombre . '"';
+        $link_generico = 'https://wa.me/?text=' . rawurlencode($texto . ' - ' . $url);
+
+        ob_start();
+        ?>
+        <a class="clc-btn-compartir btn2 btn-ol" href="<?php echo esc_url($link_generico); ?>" target="_blank" rel="noopener"
+           data-compartir-texto="<?php echo esc_attr($texto); ?>" data-compartir-url="<?php echo esc_url($url); ?>">
+            Compartir
+        </a>
+        <script>
+        (function () {
+            var btns = document.querySelectorAll('.clc-btn-compartir[data-compartir-url="<?php echo esc_js($url); ?>"]');
+            btns.forEach(function (btn) {
+                if (!navigator.share) return;
+                btn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    navigator.share({
+                        title: 'Casa Litani',
+                        text: btn.getAttribute('data-compartir-texto'),
+                        url: btn.getAttribute('data-compartir-url'),
+                    }).catch(function () {});
+                });
+            });
+        })();
+        </script>
+        <?php
+        return ob_get_clean();
     }
 }
