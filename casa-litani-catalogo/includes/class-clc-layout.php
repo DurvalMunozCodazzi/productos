@@ -31,13 +31,17 @@ class CLC_Layout {
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap">
 <?php wp_head(); ?>
 <style>
+  * { box-sizing: border-box; }
+  html, body { max-width: 100%; overflow-x: hidden; }
   body { margin: 0; background: #fffaf9; }
+  img, svg, table { max-width: 100%; }
   a { text-decoration: none; color: inherit; }
   a:hover { color: #c92f52; }
   .cl { --accent:#f9526b; --accent-dark:#c92f52; --accent-2:#b44086; --coral:#ff7b67;
         --wa:#25d366; --wa-dark:#1da851; --r:14px;
         --bg:#fffaf9; --bg-alt:#fbedef; --surface:#fff; --border:#f0dbe0; --text:#241417; --dim:#71585d;
-        background:var(--bg); color:var(--text); font-family:Inter,system-ui,sans-serif; line-height:1.6; }
+        background:var(--bg); color:var(--text); font-family:Inter,system-ui,sans-serif; line-height:1.6;
+        max-width: 100%; overflow-x: hidden; }
   .cl h1, .cl h2, .cl h3 { font-family:Sora,Inter,sans-serif; margin:0; }
   .wrap { max-width:1180px; margin:0 auto; padding:0 24px; }
   .btn2 { display:inline-flex; align-items:center; gap:8px; padding:12px 22px; border-radius:999px;
