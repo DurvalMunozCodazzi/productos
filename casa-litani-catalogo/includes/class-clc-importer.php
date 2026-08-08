@@ -258,8 +258,22 @@ class CLC_Importer {
         return get_term($insertado['term_id'], $taxonomia);
     }
 
+    /**
+     * Busca un artículo por título exacto. get_page_by_title() está deprecada desde WP 6.2;
+     * usamos WP_Query con el parámetro 'title' (lo mismo que usa el core por dentro ahora).
+     */
+    public static function buscar_articulo_por_titulo($nombre) {
+        $query = new WP_Query([
+            'post_type' => 'articulo',
+            'post_status' => 'any',
+            'title' => $nombre,
+            'posts_per_page' => 1,
+        ]);
+        return $query->have_posts() ? $query->posts[0] : null;
+    }
+
     private static function crear_o_actualizar_articulo($nombre, $descripcion, $categoria_term, $marca_term) {
-        $existente = get_page_by_title($nombre, OBJECT, 'articulo');
+        $existente = self::buscar_articulo_por_titulo($nombre);
 
         $datos_post = [
             'post_title' => $nombre,

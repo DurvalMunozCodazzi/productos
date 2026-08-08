@@ -72,12 +72,28 @@ class CLC_Estadisticas {
     public static function track_click() {
         $post_id = (int) ($_POST['post_id'] ?? 0);
         $tipo = ('compartir' === ($_POST['tipo'] ?? '')) ? 'compartir' : 'consultar';
-        if ($post_id && 'articulo' === get_post_type($post_id)) {
+
+        if ($post_id && 'articulo' === get_post_type($post_id) && self::permitir_clic($post_id, $tipo)) {
             $meta_key = '_clc_clicks_' . $tipo;
             $actual = (int) get_post_meta($post_id, $meta_key, true);
             update_post_meta($post_id, $meta_key, $actual + 1);
         }
         wp_send_json_success();
+    }
+
+    /**
+     * Este endpoint es público (sin login, sin nonce) porque lo dispara cualquier visitante
+     * del catálogo — para que no se pueda inflar el contador con pedidos repetidos desde afuera,
+     * limitamos a 1 clic por IP+artículo+tipo cada 30 segundos.
+     */
+    private static function permitir_clic($post_id, $tipo) {
+        $ip = isset($_SERVER['REMOTE_ADDR']) ? preg_replace('/[^a-zA-Z0-9.:]/', '', $_SERVER['REMOTE_ADDR']) : 'desconocida';
+        $clave = 'clc_clic_' . md5($ip . '_' . $post_id . '_' . $tipo);
+        if (get_transient($clave)) {
+            return false;
+        }
+        set_transient($clave, 1, 30);
+        return true;
     }
 
     public static function add_menu() {

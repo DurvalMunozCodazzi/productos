@@ -228,7 +228,7 @@ class CLC_Backup {
             $titulo = $item['titulo'] ?? '';
             if ('' === $titulo) continue;
 
-            $existente = get_page_by_title($titulo, OBJECT, 'articulo');
+            $existente = CLC_Importer::buscar_articulo_por_titulo($titulo);
             if (!$existente) {
                 $sin_coincidencia++;
                 continue;
