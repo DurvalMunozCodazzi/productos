@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Casa Litani - Catálogo
  * Description: Catálogo de productos (sin precios) con categorías, marcas, importador de Excel y consulta por WhatsApp.
- * Version: 3.9.0
+ * Version: 4.0.0
  * Author: Durval Muñoz Codazzi - Web Sobre Ruedas
  * Author URI: https://websobreruedas.com
  */
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 define('CLC_PATH', plugin_dir_path(__FILE__));
 define('CLC_URL', plugin_dir_url(__FILE__));
-define('CLC_VERSION', '3.9.0');
+define('CLC_VERSION', '4.0.0');
 
 require_once CLC_PATH . 'includes/class-clc-layout.php';
 require_once CLC_PATH . 'includes/class-clc-post-type.php';
@@ -30,6 +30,9 @@ require_once CLC_PATH . 'includes/class-clc-backup.php';
 require_once CLC_PATH . 'includes/class-clc-exportar.php';
 require_once CLC_PATH . 'includes/class-clc-estadisticas.php';
 require_once CLC_PATH . 'includes/class-clc-imagenes.php';
+require_once CLC_PATH . 'includes/class-clc-sitemap.php';
+require_once CLC_PATH . 'includes/class-clc-offline.php';
+require_once CLC_PATH . 'includes/class-clc-notificaciones.php';
 
 function clc_init_plugin() {
     CLC_Post_Type::init();
@@ -45,6 +48,9 @@ function clc_init_plugin() {
     CLC_Exportar::init();
     CLC_Estadisticas::init();
     CLC_Imagenes::init();
+    CLC_Sitemap::init();
+    CLC_Offline::init();
+    CLC_Notificaciones::init();
 }
 add_action('plugins_loaded', 'clc_init_plugin');
 
@@ -55,6 +61,19 @@ function clc_activate() {
     flush_rewrite_rules();
 }
 register_activation_hook(__FILE__, 'clc_activate');
+
+/**
+ * Las reglas nuevas (sitemap.xml, clc-sw.js) necesitan un flush de rewrite rules que
+ * activation_hook no dispara en una actualización sobre una instalación ya activa
+ * (desactivar+reinstalar sí lo hace, pero por las dudas lo forzamos una vez por versión).
+ */
+function clc_flush_si_hace_falta() {
+    if (get_option('clc_version_flushed') !== CLC_VERSION) {
+        flush_rewrite_rules();
+        update_option('clc_version_flushed', CLC_VERSION);
+    }
+}
+add_action('init', 'clc_flush_si_hace_falta', 20);
 
 /**
  * Crea automáticamente la página "Catálogo" si no existe todavía. Solo hace falta
@@ -76,6 +95,7 @@ function clc_crear_pagina_catalogo() {
 function clc_deactivate() {
     CLC_Pexels::desactivar_cron();
     CLC_Backup::desactivar_cron_backup();
+    CLC_Notificaciones::desactivar_cron();
     flush_rewrite_rules();
 }
 register_deactivation_hook(__FILE__, 'clc_deactivate');

@@ -12,7 +12,9 @@ class CLC_Layout {
         return home_url('/wp-content/plugins/home-litani/assets/logo.jpeg');
     }
 
-    public static function abrir_pagina($titulo = 'Casa Litani') {
+    public static function abrir_pagina($titulo = 'Casa Litani', $descripcion = '', $imagen = '') {
+        $descripcion = $descripcion ?: 'Catálogo de electrónica de Casa Litani en Encarnación, Paraguay: celulares, notebooks, audio, gaming y más. Consultá disponibilidad por WhatsApp.';
+        $imagen = $imagen ?: self::logo_url();
         ?>
 <!DOCTYPE html>
 <html <?php language_attributes(); ?>>
@@ -20,6 +22,11 @@ class CLC_Layout {
 <meta charset="<?php bloginfo('charset'); ?>">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?php echo esc_html($titulo); ?> | Casa Litani</title>
+<meta name="description" content="<?php echo esc_attr(wp_trim_words($descripcion, 30)); ?>">
+<meta property="og:type" content="website">
+<meta property="og:title" content="<?php echo esc_attr($titulo); ?> | Casa Litani">
+<meta property="og:description" content="<?php echo esc_attr(wp_trim_words($descripcion, 30)); ?>">
+<meta property="og:image" content="<?php echo esc_url($imagen); ?>">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap">
 <?php wp_head(); ?>

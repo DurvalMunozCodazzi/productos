@@ -13,6 +13,31 @@ class CLC_Estadisticas {
         add_action('wp_ajax_nopriv_clc_track_click', [__CLASS__, 'track_click']);
         add_action('wp_footer', [__CLASS__, 'imprimir_script']);
         add_action('admin_menu', [__CLASS__, 'add_menu']);
+        add_action('template_redirect', [__CLASS__, 'registrar_visita_taxonomia']);
+    }
+
+    /** Suma 1 visita a la categoría (y a la marca, si se está filtrando por ?marca=) cada vez que se carga esa página. */
+    public static function registrar_visita_taxonomia() {
+        if (!is_tax('categoria_producto')) {
+            return;
+        }
+        $categoria = get_queried_object();
+        if ($categoria) {
+            self::sumar_visita($categoria->term_id);
+        }
+
+        $marca_slug = isset($_GET['marca']) ? sanitize_title($_GET['marca']) : '';
+        if ($marca_slug) {
+            $marca = get_term_by('slug', $marca_slug, 'marca_producto');
+            if ($marca) {
+                self::sumar_visita($marca->term_id);
+            }
+        }
+    }
+
+    private static function sumar_visita($term_id) {
+        $actual = (int) get_term_meta($term_id, '_clc_visitas', true);
+        update_term_meta($term_id, '_clc_visitas', $actual + 1);
     }
 
     public static function imprimir_script() {
@@ -105,6 +130,35 @@ class CLC_Estadisticas {
                         </tr>
                     <?php endwhile; wp_reset_postdata(); else: ?>
                         <tr><td colspan="3">Todavía no hay clics registrados.</td></tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+
+            <h2 style="margin-top:30px;">Categorías y marcas más navegadas</h2>
+            <p>Cuántas veces se abrió cada página de categoría/marca (no solo el interés puntual en un producto).</p>
+            <table class="wp-list-table widefat fixed striped" style="max-width:600px;">
+                <thead><tr><th>Categoría / Marca</th><th style="width:120px;">Visitas</th></tr></thead>
+                <tbody>
+                    <?php
+                    $terminos = array_merge(
+                        get_terms(['taxonomy' => 'categoria_producto', 'hide_empty' => false]) ?: [],
+                        get_terms(['taxonomy' => 'marca_producto', 'hide_empty' => false]) ?: []
+                    );
+                    $con_visitas = [];
+                    foreach ($terminos as $termino) {
+                        $visitas = (int) get_term_meta($termino->term_id, '_clc_visitas', true);
+                        if ($visitas > 0) {
+                            $con_visitas[] = ['nombre' => $termino->name, 'visitas' => $visitas];
+                        }
+                    }
+                    usort($con_visitas, function ($a, $b) { return $b['visitas'] - $a['visitas']; });
+                    ?>
+                    <?php if (empty($con_visitas)): ?>
+                        <tr><td colspan="2">Todavía no hay visitas registradas.</td></tr>
+                    <?php else: ?>
+                        <?php foreach ($con_visitas as $fila): ?>
+                            <tr><td><?php echo esc_html($fila['nombre']); ?></td><td><?php echo esc_html($fila['visitas']); ?></td></tr>
+                        <?php endforeach; ?>
                     <?php endif; ?>
                 </tbody>
             </table>
