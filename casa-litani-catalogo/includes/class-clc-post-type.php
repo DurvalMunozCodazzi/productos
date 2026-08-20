@@ -115,4 +115,24 @@ class CLC_Post_Type {
             echo esc_html(get_post_meta($post_id, '_clc_estado', true) ?: 'activo');
         }
     }
+
+    /**
+     * Devuelve la categoría de nivel más alto (raíz) de un término, subiendo por sus
+     * padres. Si el término ya es de nivel 1, se devuelve a sí mismo. Se usa para saber
+     * qué chip resaltar en la franja de categorías y qué mostrar en las migas de pan
+     * cuando estamos parados en una subcategoría (ej. Notebook → su raíz es Ordenadores).
+     */
+    public static function categoria_raiz($termino) {
+        $actual = $termino;
+        $vueltas = 0;
+        while ($actual->parent && $vueltas < 10) {
+            $padre = get_term($actual->parent, 'categoria_producto');
+            if (!$padre || is_wp_error($padre)) {
+                break;
+            }
+            $actual = $padre;
+            $vueltas++;
+        }
+        return $actual;
+    }
 }

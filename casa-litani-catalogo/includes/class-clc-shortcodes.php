@@ -12,6 +12,40 @@ class CLC_Shortcodes {
         add_shortcode('clc_franja_categorias', [__CLASS__, 'shortcode_franja_categorias']);
         add_shortcode('clc_credito', [__CLASS__, 'shortcode_credito']);
         add_shortcode('clc_novedades', [__CLASS__, 'shortcode_novedades']);
+        add_shortcode('clc_subcategorias', [__CLASS__, 'shortcode_subcategorias']);
+    }
+
+    /** [clc_subcategorias categoria="ordenadores"] — grilla de subcategorías (nivel 2) de una categoría, con conteo. */
+    public static function shortcode_subcategorias($atts) {
+        $atts = shortcode_atts(['categoria' => ''], $atts);
+        if (empty($atts['categoria'])) {
+            return '';
+        }
+        $padre = get_term_by('slug', $atts['categoria'], 'categoria_producto');
+        if (!$padre) {
+            return '';
+        }
+        $hijos = get_terms(['taxonomy' => 'categoria_producto', 'parent' => $padre->term_id, 'hide_empty' => false]);
+        if (empty($hijos) || is_wp_error($hijos)) {
+            return '';
+        }
+
+        ob_start();
+        echo '<div class="clc-grid clc-grid-categorias">';
+        foreach ($hijos as $hijo) {
+            $cantidad = new WP_Query([
+                'post_type' => 'articulo',
+                'posts_per_page' => -1,
+                'fields' => 'ids',
+                'tax_query' => [['taxonomy' => 'categoria_producto', 'field' => 'term_id', 'terms' => $hijo->term_id]],
+            ]);
+            echo '<a class="clc-card clc-card-marca" href="' . esc_url(get_term_link($hijo)) . '">';
+            echo '<span class="clc-card-titulo">' . esc_html($hijo->name) . '</span>';
+            echo '<span style="display:block;font-size:11.5px;color:var(--dim,#999);margin-top:4px;">' . (int) $cantidad->found_posts . ' modelos</span>';
+            echo '</a>';
+        }
+        echo '</div>';
+        return ob_get_clean();
     }
 
     /** [clc_novedades limite="8"] — últimos artículos cargados, para destacar lo nuevo sin tocar nada a mano. */
@@ -61,7 +95,7 @@ class CLC_Shortcodes {
      */
     public static function shortcode_franja_categorias($atts) {
         $atts = shortcode_atts(['categoria_actual' => ''], $atts);
-        $terms = get_terms(['taxonomy' => 'categoria_producto', 'hide_empty' => false]);
+        $terms = get_terms(['taxonomy' => 'categoria_producto', 'hide_empty' => false, 'parent' => 0]);
         if (empty($terms) || is_wp_error($terms)) {
             return '';
         }
@@ -79,7 +113,7 @@ class CLC_Shortcodes {
 
     /** [clc_categorias] — grilla de categorías (nivel 1 de navegación) */
     public static function shortcode_categorias() {
-        $terms = get_terms(['taxonomy' => 'categoria_producto', 'hide_empty' => false]);
+        $terms = get_terms(['taxonomy' => 'categoria_producto', 'hide_empty' => false, 'parent' => 0]);
         if (empty($terms) || is_wp_error($terms)) {
             return '<p>No hay categorías cargadas todavía.</p>';
         }
