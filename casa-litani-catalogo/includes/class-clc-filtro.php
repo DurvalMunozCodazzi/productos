@@ -43,13 +43,22 @@ class CLC_Filtro {
         echo do_shortcode('[clc_franja_categorias]');
         ?>
         <div class="clc-filtro-barra">
-            <select id="clc-filtro-categoria">
-                <option value="">Tipo de producto: Todos</option>
-            </select>
-            <select id="clc-filtro-marca">
-                <option value="">Marca: Todas</option>
-            </select>
-            <input type="text" id="clc-filtro-buscar" placeholder="Buscar por nombre o modelo…">
+            <div class="clc-filtro-titulo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+                Buscar en el catálogo
+            </div>
+            <div class="clc-filtro-fila">
+                <select id="clc-filtro-categoria">
+                    <option value="">Tipo de producto: Todos</option>
+                </select>
+                <select id="clc-filtro-marca">
+                    <option value="">Marca: Todas</option>
+                </select>
+                <div class="clc-filtro-campo-buscar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+                    <input type="text" id="clc-filtro-buscar" placeholder="Buscar por nombre o modelo…">
+                </div>
+            </div>
         </div>
         <div id="clc-filtro-resultados" class="clc-grid clc-grid-articulos"></div>
         <p id="clc-filtro-estado" class="clc-filtro-estado"></p>

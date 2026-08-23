@@ -126,23 +126,84 @@
 }
 
 .clc-filtro-barra {
+    margin: 20px 0 8px;
+    padding: 18px 20px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, var(--accent, #f9526b), var(--accent-dark, #c92f52));
+    box-shadow: 0 8px 24px rgba(201, 47, 82, 0.25);
+}
+
+.clc-filtro-titulo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #fff;
+    font-weight: 800;
+    font-size: 1rem;
+    margin-bottom: 14px;
+}
+
+.clc-filtro-titulo svg {
+    width: 19px;
+    height: 19px;
+    flex-shrink: 0;
+}
+
+.clc-filtro-fila {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
-    margin: 20px 0 8px;
-    position: sticky;
-    top: 0;
-    background: #fff;
-    padding: 10px 0;
-    z-index: 10;
 }
 
-.clc-filtro-barra select,
-.clc-filtro-barra input[type="text"] {
-    padding: 10px 12px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    font-size: 14px;
+.clc-filtro-barra select {
+    appearance: none;
+    -webkit-appearance: none;
+    padding: 12px 34px 12px 14px;
+    border: none;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 600;
+    background: #fff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23c92f52" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>') no-repeat right 10px center;
+    background-size: 16px;
+    color: #241417;
+    cursor: pointer;
+    min-width: 160px;
+}
+
+.clc-filtro-campo-buscar {
+    flex: 1;
+    min-width: 220px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border-radius: 10px;
+}
+
+.clc-filtro-campo-buscar svg {
+    position: absolute;
+    left: 14px;
+    width: 17px;
+    height: 17px;
+    color: #71585d;
+    pointer-events: none;
+}
+
+.clc-filtro-campo-buscar input[type="text"] {
+    width: 100%;
+    border: none;
+    background: transparent;
+    padding: 12px 14px 12px 40px;
+    font-size: 13.5px;
+    font-family: inherit;
+    color: #241417;
+    border-radius: 10px;
+}
+
+.clc-filtro-barra select:focus,
+.clc-filtro-campo-buscar input:focus {
+    outline: 2px solid rgba(255, 255, 255, 0.75);
+    outline-offset: 1px;
 }
 
 .clc-filtro-barra input[type="text"] {
