@@ -15,7 +15,7 @@ CLC_Layout::abrir_pagina('Catálogo');
 
     <?php echo do_shortcode('[clc_categorias]'); ?>
 
-    <h2 style="font-size:clamp(1.4rem,2.5vw,1.9rem);font-weight:700;letter-spacing:-.01em;margin:48px 0 16px">O buscá directo</h2>
+    <h2 id="buscador" style="font-size:clamp(1.4rem,2.5vw,1.9rem);font-weight:700;letter-spacing:-.01em;margin:48px 0 16px;scroll-margin-top:100px;">O buscá directo</h2>
     <?php echo do_shortcode('[clc_filtro_catalogo]'); ?>
 <?php
 CLC_Layout::cerrar_pagina();

@@ -15,7 +15,9 @@
     }
 
     async function cargarCategorias() {
-        categorias = await api('categoria_producto?per_page=100&hide_empty=true');
+        // parent=0 -> solo categorías de primer nivel (Ordenadores, Celulares, etc.), sin
+        // mezclar las subcategorías (Notebook, Tablet...) en el mismo desplegable.
+        categorias = await api('categoria_producto?per_page=100&hide_empty=true&parent=0');
         categorias.forEach(c => {
             const opt = document.createElement('option');
             opt.value = c.id;

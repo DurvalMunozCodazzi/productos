@@ -95,6 +95,7 @@ class CLC_Layout {
       <nav class="clc-nav-links" id="clc-nav-links">
         <a href="<?php echo esc_url(home_url('/')); ?>">Inicio</a>
         <a href="<?php echo esc_url(home_url('/catalogo/')); ?>" style="color:var(--accent)">Productos</a>
+        <a href="<?php echo esc_url(home_url('/catalogo/#buscador')); ?>">Buscar</a>
         <a href="<?php echo esc_url(home_url('/instalaciones/')); ?>">Instalaciones</a>
         <a href="<?php echo esc_url(home_url('/ubicacion/')); ?>">Ubicación</a>
         <a href="<?php echo esc_url(home_url('/contacto/')); ?>">Contacto</a>
