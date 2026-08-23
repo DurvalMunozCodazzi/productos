@@ -41,7 +41,7 @@ class CLC_Shortcodes {
             ]);
             echo '<a class="clc-card clc-card-marca" href="' . esc_url(get_term_link($hijo)) . '">';
             echo '<span class="clc-card-titulo">' . esc_html($hijo->name) . '</span>';
-            echo '<span style="display:block;font-size:11.5px;color:var(--dim,#999);margin-top:4px;">' . (int) $cantidad->found_posts . ' modelos</span>';
+            echo '<span class="clc-card-conteo">' . (int) $cantidad->found_posts . ' modelos</span>';
             echo '</a>';
         }
         echo '</div>';
@@ -122,11 +122,18 @@ class CLC_Shortcodes {
         foreach ($terms as $term) {
             $img = get_term_meta($term->term_id, 'clc_imagen', true);
             $link = get_term_link($term);
+            $cantidad = new WP_Query([
+                'post_type' => 'articulo',
+                'posts_per_page' => -1,
+                'fields' => 'ids',
+                'tax_query' => [['taxonomy' => 'categoria_producto', 'field' => 'term_id', 'terms' => $term->term_id]],
+            ]);
             echo '<a class="clc-card" href="' . esc_url($link) . '">';
             if ($img) {
                 echo '<img src="' . esc_url($img) . '" alt="' . esc_attr($term->name) . '">';
             }
             echo '<span class="clc-card-titulo">' . esc_html($term->name) . '</span>';
+            echo '<span class="clc-card-conteo">' . (int) $cantidad->found_posts . ' modelos</span>';
             echo '</a>';
         }
         echo '</div>';
@@ -157,10 +164,12 @@ class CLC_Shortcodes {
         }
 
         $marca_ids = [];
+        $conteo = [];
         foreach ($articulos as $post_id) {
             $marcas = wp_get_post_terms($post_id, 'marca_producto');
             foreach ($marcas as $m) {
                 $marca_ids[$m->term_id] = $m;
+                $conteo[$m->term_id] = ($conteo[$m->term_id] ?? 0) + 1;
             }
         }
 
@@ -170,6 +179,7 @@ class CLC_Shortcodes {
             $link = add_query_arg('marca', $marca->slug, get_term_link($atts['categoria'], 'categoria_producto'));
             echo '<a class="clc-card clc-card-marca" href="' . esc_url($link) . '">';
             echo '<span class="clc-card-titulo">' . esc_html($marca->name) . '</span>';
+            echo '<span class="clc-card-conteo">' . (int) $conteo[$marca->term_id] . ' modelos</span>';
             echo '</a>';
         }
         echo '</div>';
