@@ -66,7 +66,20 @@ class CLC_Migracion2 {
                 $marcas_con_boton = ['Lenovo', 'MSI', 'HP', 'Asus', 'Acer', 'Dell', 'Alienware'];
                 return ['Ordenadores', in_array($marca_actual, $marcas_con_boton, true) ? $marca_actual : 'Notebook'];
             }
-            return ['Ordenadores', 'Notebook'];
+            // La subcategoría del cliente ya está puesta (ej. "Tablet"/"MacBook"), no hace falta tocar nada.
+            if ($subcat_actual && in_array($subcat_actual, self::ARBOL['Ordenadores'], true)) {
+                return null;
+            }
+            // Todavía crudo (la migración v1 no llegó a procesar este artículo): lo clasificamos
+            // directo desde la marca/título original, sin depender de que v1 haya terminado.
+            if ('Varios' === $marca_actual || str_contains($t, 'tablet')) {
+                $marca = ('Varios' === $marca_actual) ? (self::extraer_marca($titulo) ?: $marca_actual) : $marca_actual;
+                return ['Ordenadores', ('Samsung' === $marca) ? 'Samsung' : 'Tablet'];
+            }
+            if (str_contains($t, 'macbook')) return ['Ordenadores', 'MacBook'];
+            if (str_starts_with($t, 'ipad') || str_contains($t, ' ipad')) return ['Ordenadores', 'Tablet'];
+            $marcas_con_boton = ['Lenovo', 'MSI', 'HP', 'Asus', 'Acer', 'Dell', 'Alienware'];
+            return ['Ordenadores', in_array($marca_actual, $marcas_con_boton, true) ? $marca_actual : 'Notebook'];
         }
 
         if ('Celulares' === $cat_raiz) {
@@ -75,28 +88,34 @@ class CLC_Migracion2 {
             return ['Celulares', $marca ?: 'Accesorios'];
         }
 
-        if ('Relojes' === $cat_raiz) {
+        if (in_array($cat_raiz, ['Relojes', 'Reloj'], true)) {
             if ('Garmin' === $marca_actual) return ['Reloj', 'Garmin'];
             if ('Apple' === $marca_actual) return ['Reloj', 'Apple Watch'];
-            if ('Samsung' === $marca_actual) return ['Reloj', 'Samsung Watch'];
+            if (in_array($marca_actual, ['Samsung', 'Samsung Watch'], true)) return ['Reloj', 'Samsung Watch'];
             return ['Reloj', 'Varios'];
         }
 
         if ('Audio' === $cat_raiz) {
-            if ('Parlantes' === $subcat_actual) return ['Audio', 'Parlantes'];
-            if ('Auriculares' === $subcat_actual) return ['Audio', 'Auriculares'];
+            // Relojes Apple Watch mal cargados en Audio (con o sin que v1 los haya procesado) — se mudan.
+            if ('Airpods' === $marca_actual && (str_contains($t, 'reloj') || preg_match('/^apple (se|s\d)/', $t))) {
+                return ['Reloj', 'Apple Watch'];
+            }
+            if ('Parlantes' === $subcat_actual || 'JBL Parlantes' === $marca_actual) return ['Audio', 'Parlantes'];
+            if ('Auriculares' === $subcat_actual || 'JBL Auriculares' === $marca_actual || 'Airpods' === $marca_actual) return ['Audio', 'Auriculares'];
+            if (in_array($subcat_actual, ['Multimedia', 'Varios'], true)) return null;
             return ['Audio', 'Varios'];
         }
 
         if ('Gaming' === $cat_raiz) {
-            if ('PlayStation' === $marca_actual) return ['Gaming', 'PlayStation'];
-            if ('Xbox' === $marca_actual) return ['Gaming', 'Xbox'];
-            if ('Nintendo' === $marca_actual) return ['Gaming', 'Nintendo'];
+            if (in_array($subcat_actual, ['PlayStation', 'Xbox', 'Nintendo', 'Consolas'], true)) return null;
+            if (str_contains($t, 'x box') || str_contains($t, 'xbox') || 'Xbox' === $marca_actual) return ['Gaming', 'Xbox'];
+            if (str_contains($t, 'nintendo') || 'Nintendo' === $marca_actual) return ['Gaming', 'Nintendo'];
+            if (str_starts_with($t, 'play') || 'PlayStation' === $marca_actual) return ['Gaming', 'PlayStation'];
             return ['Gaming', 'Consolas'];
         }
 
-        if ('Pantallas' === $cat_raiz) {
-            if ('Proyectores' === $subcat_actual) return ['Hogar', 'Proyectores'];
+        if (in_array($cat_raiz, ['Pantallas', 'Hogar'], true)) {
+            if ('Proyectores' === $subcat_actual || str_contains($t, 'proyector')) return ['Hogar', 'Proyectores'];
             return ['Hogar', 'Televisores'];
         }
 
@@ -104,13 +123,29 @@ class CLC_Migracion2 {
             return ['Movilidad', 'Patineta'];
         }
 
-        if ('Accesorios Varios' === $cat_raiz) {
-            if ('Impresoras' === $subcat_actual) {
+        if (in_array($cat_raiz, ['Accesorios Varios', 'Artículos Varios'], true)) {
+            // Relojes que todavía estén crudos acá (la vieja categoría "Accesorios Varios",
+            // de antes de la primera reorganización) también se mudan a Reloj.
+            if ('Garmin' === $marca_actual) return ['Reloj', 'Garmin'];
+            if ('Samsung Watch' === $marca_actual) return ['Reloj', 'Samsung Watch'];
+            if ('Impresoras' === $subcat_actual || 'Impresoras' === $marca_actual) {
                 return ['Artículos Varios', 'Impresoras'];
             }
             return null;
         }
 
+        return null;
+    }
+
+    /** Palabras clave para extraer la marca real del título cuando la marca cargada no sirve (ej. "Varios"). */
+    private static function extraer_marca($titulo) {
+        $mapa = ['SAMSUNG' => 'Samsung', 'XIAOMI' => 'Xiaomi', 'LENOVO' => 'Lenovo', 'CIDEA' => 'C Idea', 'AMAZON' => 'Amazon'];
+        $t = mb_strtoupper($titulo);
+        foreach ($mapa as $palabra => $marca) {
+            if (str_contains($t, $palabra)) {
+                return $marca;
+            }
+        }
         return null;
     }
 
