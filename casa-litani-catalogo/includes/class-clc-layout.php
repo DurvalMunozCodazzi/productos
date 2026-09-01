@@ -53,7 +53,10 @@ class CLC_Layout {
   .btn-wa:hover { background:var(--wa-dark); color:#06210f; box-shadow:0 8px 24px rgba(37,211,102,.35); }
   .btn-ol { background:transparent; color:var(--text); border-color:var(--border); }
   .btn-ol:hover { border-color:var(--accent); color:var(--accent); }
-  .clc-cat-strip { display:flex; gap:8px; overflow-x:auto; padding-bottom:12px; margin-bottom:20px; }
+  .clc-cat-strip { display:flex; flex-wrap:wrap; gap:8px; overflow-x:auto; padding-bottom:12px; margin-bottom:20px;
+                   scrollbar-width:none; -ms-overflow-style:none; }
+  .clc-cat-strip::-webkit-scrollbar { display:none; }
+  @media (max-width: 600px) { .clc-cat-strip { overflow-x:visible; } }
   .clc-cat-chip { display:inline-flex; align-items:center; white-space:nowrap; border:1px solid var(--border);
                   background:#fff; color:#555; font-weight:600; font-size:13px; padding:8px 14px; border-radius:100px; }
   .clc-cat-chip:hover { border-color:var(--accent); color:var(--accent); }
