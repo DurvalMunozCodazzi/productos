@@ -52,6 +52,13 @@ class CLC_Migracion2 {
     private static function clasificar($cat_raiz, $subcat_actual, $marca_actual, $titulo) {
         $t = mb_strtolower($titulo);
 
+        // Las impresoras pueden haber quedado enganchadas por error al "Accesorios" compartido
+        // de otra categoría (bug de versiones anteriores) — las corregimos sin importar dónde
+        // hayan quedado, mirando directo la marca.
+        if (in_array($marca_actual, ['Epson', 'Brother'], true)) {
+            return ['Ordenadores', 'Accesorios'];
+        }
+
         if ('Ordenadores' === $cat_raiz) {
             // Si ya está en una subcategoría específica de marca/tipo (no genérica), ya está bien
             // clasificado — no hace falta volver a tocarlo. "Notebook" y "Notebooks" NO cuentan acá
@@ -190,14 +197,28 @@ class CLC_Migracion2 {
         return $cambios;
     }
 
+    /**
+     * Busca (o crea) un término dentro de un PADRE puntual — no alcanza con buscar por nombre
+     * solo, porque varias categorías comparten nombres de subcategoría (ej. "Accesorios" existe
+     * en Celulares Y en Ordenadores) y WordPress permite nombres repetidos bajo padres distintos.
+     * Buscar solo por nombre reutilizaba por error el término de otra categoría.
+     */
     private static function obtener_o_crear_termino($nombre, $padre_id = 0) {
-        $existente = get_term_by('name', $nombre, 'categoria_producto');
-        if ($existente) {
-            return $existente;
+        $existentes = get_terms([
+            'taxonomy' => 'categoria_producto',
+            'name' => $nombre,
+            'parent' => $padre_id,
+            'hide_empty' => false,
+        ]);
+        if (!is_wp_error($existentes) && !empty($existentes)) {
+            return $existentes[0];
         }
         $insertado = wp_insert_term($nombre, 'categoria_producto', ['parent' => $padre_id]);
         if (is_wp_error($insertado)) {
-            return get_term_by('name', $nombre, 'categoria_producto');
+            // Puede fallar si ya existe un término con ese slug exacto en otro padre; WP
+            // igual permite nombres repetidos, así que buscamos de nuevo por si se creó justo antes.
+            $reintento = get_terms(['taxonomy' => 'categoria_producto', 'name' => $nombre, 'parent' => $padre_id, 'hide_empty' => false]);
+            return (!is_wp_error($reintento) && !empty($reintento)) ? $reintento[0] : null;
         }
         return get_term($insertado['term_id'], 'categoria_producto');
     }
