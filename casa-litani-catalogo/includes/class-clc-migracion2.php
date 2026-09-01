@@ -31,6 +31,7 @@ class CLC_Migracion2 {
     public static function init() {
         add_action('admin_menu', [__CLASS__, 'add_menu']);
         add_action('admin_post_clc_migracion2_aplicar', [__CLASS__, 'aplicar']);
+        add_action('admin_post_clc_migracion2_borrar', [__CLASS__, 'borrar_categoria_vieja']);
     }
 
     public static function add_menu() {
@@ -215,6 +216,37 @@ class CLC_Migracion2 {
                     <button type="submit" class="button button-primary" onclick="return confirm('¿Aplicar estos <?php echo count($cambios); ?> cambios? Se recomienda haber bajado un backup antes (Artículos → Backup).');">Aplicar estos <?php echo count($cambios); ?> cambios</button>
                 </form>
             <?php endif; ?>
+
+            <?php $viejas = self::categorias_viejas_candidatas(); ?>
+            <?php if (!empty($viejas)): ?>
+                <h2 style="margin-top:30px;">Categorías viejas para limpiar</h2>
+                <p>Categorías de primer nivel que ya no están en la planilla nueva (quedaron de una reorganización
+                anterior). Borrala solo cuando diga <strong>0 artículos</strong> — si todavía tiene productos,
+                primero volvé a tocar "Aplicar" arriba para terminar de moverlos.</p>
+                <table class="wp-list-table widefat fixed striped" style="max-width:600px;">
+                    <thead><tr><th>Categoría</th><th style="width:110px;">Artículos</th><th style="width:120px;"></th></tr></thead>
+                    <tbody>
+                        <?php foreach ($viejas as $v): ?>
+                            <tr>
+                                <td><?php echo esc_html($v['termino']->name); ?></td>
+                                <td><?php echo (int) $v['cantidad']; ?></td>
+                                <td>
+                                    <?php if (0 === $v['cantidad']): ?>
+                                        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" onsubmit="return confirm('¿Borrar la categoría <?php echo esc_js($v['termino']->name); ?>?');">
+                                            <input type="hidden" name="action" value="clc_migracion2_borrar">
+                                            <input type="hidden" name="term_id" value="<?php echo esc_attr($v['termino']->term_id); ?>">
+                                            <?php wp_nonce_field('clc_migracion2_borrar', 'clc_migracion2_borrar_nonce'); ?>
+                                            <button type="submit" class="button button-link-delete">Borrar</button>
+                                        </form>
+                                    <?php else: ?>
+                                        <span style="color:#999;">tiene productos</span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
         </div>
         <?php
     }
@@ -224,13 +256,27 @@ class CLC_Migracion2 {
             wp_die('No autorizado');
         }
         check_admin_referer('clc_migracion2_aplicar', 'clc_migracion2_nonce');
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(180);
+        }
 
         self::crear_arbol();
         $cambios = self::analizar();
 
+        // Cache de términos ya resueltos en esta corrida, para no repetir la búsqueda por
+        // cada uno de los ~300 artículos (evita quedarse sin tiempo en hostings más lentos).
+        $cache_terminos = [];
+        $resolver = function ($nombre, $padre_id) use (&$cache_terminos) {
+            $clave = $padre_id . '|' . $nombre;
+            if (!isset($cache_terminos[$clave])) {
+                $cache_terminos[$clave] = self::obtener_o_crear_termino($nombre, $padre_id);
+            }
+            return $cache_terminos[$clave];
+        };
+
         foreach ($cambios as $c) {
-            $padre = self::obtener_o_crear_termino($c['categoria_nueva'], 0);
-            $subcat = self::obtener_o_crear_termino($c['subcategoria_nueva'], $padre->term_id);
+            $padre = $resolver($c['categoria_nueva'], 0);
+            $subcat = $resolver($c['subcategoria_nueva'], $padre->term_id);
             wp_set_object_terms($c['post_id'], [(int) $subcat->term_id], 'categoria_producto');
         }
 
@@ -240,6 +286,46 @@ class CLC_Migracion2 {
 
         $mensaje = count($cambios) . ' artículos reclasificados a la estructura nueva.';
         wp_safe_redirect(add_query_arg('aplicado', urlencode($mensaje), admin_url('edit.php?post_type=articulo&page=clc-migracion2')));
+        exit;
+    }
+
+    /** Categorías de primer nivel que ya no están en la planilla nueva — candidatas a borrar una vez vacías. */
+    private static function categorias_viejas_candidatas() {
+        $top = get_terms(['taxonomy' => 'categoria_producto', 'parent' => 0, 'hide_empty' => false]);
+        if (is_wp_error($top)) {
+            return [];
+        }
+        $nombres_nuevos = array_keys(self::ARBOL);
+        $candidatas = [];
+        foreach ($top as $termino) {
+            if (in_array($termino->name, $nombres_nuevos, true)) {
+                continue;
+            }
+            // Cuántos artículos tiene puestos DIRECTO en esta categoría vieja (sin contar hijos).
+            $cantidad = new WP_Query([
+                'post_type' => 'articulo',
+                'posts_per_page' => -1,
+                'fields' => 'ids',
+                'tax_query' => [['taxonomy' => 'categoria_producto', 'field' => 'term_id', 'terms' => $termino->term_id, 'include_children' => false]],
+            ]);
+            $candidatas[] = ['termino' => $termino, 'cantidad' => $cantidad->found_posts];
+        }
+        return $candidatas;
+    }
+
+    public static function borrar_categoria_vieja() {
+        if (!current_user_can('manage_options')) {
+            wp_die('No autorizado');
+        }
+        check_admin_referer('clc_migracion2_borrar', 'clc_migracion2_borrar_nonce');
+
+        $term_id = (int) ($_POST['term_id'] ?? 0);
+        $termino = get_term($term_id, 'categoria_producto');
+        if ($termino && !is_wp_error($termino)) {
+            wp_delete_term($term_id, 'categoria_producto');
+        }
+
+        wp_safe_redirect(add_query_arg('aplicado', urlencode('Categoría vieja eliminada.'), admin_url('edit.php?post_type=articulo&page=clc-migracion2')));
         exit;
     }
 }

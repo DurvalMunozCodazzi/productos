@@ -92,11 +92,27 @@
 
 .clc-cat-strip {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     overflow-x: auto;
     padding-bottom: 12px;
     margin-bottom: 20px;
     border-bottom: 1px solid #eee;
+    /* Oculta la barra de scroll en los navegadores que la soportan (queda el gesto de
+       arrastrar en pantallas anchas donde no entran todos los chips en una fila, sin la
+       barra visible como elemento de interfaz). */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.clc-cat-strip::-webkit-scrollbar {
+    display: none;
+}
+
+@media (max-width: 600px) {
+    .clc-cat-strip {
+        overflow-x: visible;
+    }
 }
 
 .clc-cat-chip {
