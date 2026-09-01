@@ -19,7 +19,8 @@ class CLC_Migracion2 {
         'Audio' => ['Auriculares', 'Parlantes', 'Multimedia', 'Varios'],
         'Celulares' => ['Xiaomi', 'Motorola', 'Samsung', 'Infinix', 'iPhone', 'Oppo', 'Blackview', 'Doogee', 'Accesorios'],
         'Gaming' => ['PlayStation', 'Xbox', 'Nintendo', 'Consolas'],
-        'Hogar' => ['Electrodomésticos', 'Aire Acondicionado', 'Cámara de Vigilancia', 'Televisores', 'Proyectores'],
+        'Hogar' => ['Electrodomésticos', 'Aire Acondicionado', 'Cámara de Vigilancia', 'Proyectores'],
+        'Televisores' => [],
         'Movilidad' => ['Patineta', 'Moto Eléctrica'],
         'Ordenadores' => ['Lenovo', 'MSI', 'HP', 'MacBook', 'Asus', 'Acer', 'Dell', 'Alienware', 'Samsung', 'Tablet', 'Notebook', 'Accesorios'],
         'Reloj' => ['Garmin', 'Samsung Watch', 'Apple Watch', 'Xiaomi', 'Varios'],
@@ -114,9 +115,10 @@ class CLC_Migracion2 {
             return ['Gaming', 'Consolas'];
         }
 
-        if (in_array($cat_raiz, ['Pantallas', 'Hogar'], true)) {
+        if (in_array($cat_raiz, ['Pantallas', 'Hogar', 'Televisores'], true)) {
             if ('Proyectores' === $subcat_actual || str_contains($t, 'proyector')) return ['Hogar', 'Proyectores'];
-            return ['Hogar', 'Televisores'];
+            // Televisores es categoría propia, va directo a marca (sin subcategoría en el medio).
+            return ['Televisores', null];
         }
 
         if ('Movilidad' === $cat_raiz) {
@@ -239,7 +241,7 @@ class CLC_Migracion2 {
                             <tr>
                                 <td><?php echo esc_html($c['titulo']); ?></td>
                                 <td><?php echo esc_html($c['antes']); ?></td>
-                                <td><strong><?php echo esc_html($c['categoria_nueva'] . ' / ' . $c['subcategoria_nueva']); ?></strong></td>
+                                <td><strong><?php echo esc_html(implode(' / ', array_filter([$c['categoria_nueva'], $c['subcategoria_nueva']]))); ?></strong></td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -312,8 +314,8 @@ class CLC_Migracion2 {
 
         foreach ($cambios as $c) {
             $padre = $resolver($c['categoria_nueva'], 0);
-            $subcat = $resolver($c['subcategoria_nueva'], $padre->term_id);
-            wp_set_object_terms($c['post_id'], [(int) $subcat->term_id], 'categoria_producto');
+            $destino = $c['subcategoria_nueva'] ? $resolver($c['subcategoria_nueva'], $padre->term_id) : $padre;
+            wp_set_object_terms($c['post_id'], [(int) $destino->term_id], 'categoria_producto');
         }
 
         if (class_exists('CLC_Cache')) {
