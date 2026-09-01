@@ -254,16 +254,17 @@ class CLC_Migracion2 {
 
             <?php $viejas = self::categorias_viejas_candidatas(); ?>
             <?php if (!empty($viejas)): ?>
-                <h2 style="margin-top:30px;">Categorías viejas para limpiar</h2>
-                <p>Categorías de primer nivel que ya no están en la planilla nueva (quedaron de una reorganización
-                anterior). Borrala solo cuando diga <strong>0 artículos</strong> — si todavía tiene productos,
-                primero volvé a tocar "Aplicar" arriba para terminar de moverlos.</p>
-                <table class="wp-list-table widefat fixed striped" style="max-width:600px;">
-                    <thead><tr><th>Categoría</th><th style="width:110px;">Artículos</th><th style="width:120px;"></th></tr></thead>
+                <h2 style="margin-top:30px;">Categorías y subcategorías viejas para limpiar</h2>
+                <p>Categorías o subcategorías que ya no están en la planilla nueva (quedaron de una reorganización
+                anterior — ej. "Notebooks" en plural, duplicada con la "Notebook" nueva). Borrala solo cuando diga
+                <strong>0 artículos</strong> — si todavía tiene productos, primero volvé a tocar "Aplicar" arriba
+                para terminar de moverlos.</p>
+                <table class="wp-list-table widefat fixed striped" style="max-width:700px;">
+                    <thead><tr><th>Categoría / Subcategoría</th><th style="width:110px;">Artículos</th><th style="width:120px;"></th></tr></thead>
                     <tbody>
                         <?php foreach ($viejas as $v): ?>
                             <tr>
-                                <td><?php echo esc_html($v['termino']->name); ?></td>
+                                <td><?php echo esc_html($v['ruta']); ?></td>
                                 <td><?php echo (int) $v['cantidad']; ?></td>
                                 <td>
                                     <?php if (0 === $v['cantidad']): ?>
@@ -324,27 +325,52 @@ class CLC_Migracion2 {
         exit;
     }
 
-    /** Categorías de primer nivel que ya no están en la planilla nueva — candidatas a borrar una vez vacías. */
+    private static function contar_directo($term_id) {
+        $cantidad = new WP_Query([
+            'post_type' => 'articulo',
+            'posts_per_page' => -1,
+            'fields' => 'ids',
+            'tax_query' => [['taxonomy' => 'categoria_producto', 'field' => 'term_id', 'terms' => $term_id, 'include_children' => false]],
+        ]);
+        return $cantidad->found_posts;
+    }
+
+    /**
+     * Categorías/subcategorías que ya no están en la planilla nueva — candidatas a borrar una
+     * vez vacías. Incluye tanto categorías de primer nivel viejas (ej. "Relojes", "Pantallas")
+     * como subcategorías huérfanas de una categoría que sí sigue existiendo (ej. "Notebooks"/
+     * "Tablets"/"MacBooks", en plural, hijas de Ordenadores, duplicadas con las nuevas en singular).
+     */
     private static function categorias_viejas_candidatas() {
+        $nombres_nuevos = array_keys(self::ARBOL);
+        $candidatas = [];
+
         $top = get_terms(['taxonomy' => 'categoria_producto', 'parent' => 0, 'hide_empty' => false]);
         if (is_wp_error($top)) {
             return [];
         }
-        $nombres_nuevos = array_keys(self::ARBOL);
-        $candidatas = [];
+
         foreach ($top as $termino) {
-            if (in_array($termino->name, $nombres_nuevos, true)) {
+            if (!in_array($termino->name, $nombres_nuevos, true)) {
+                // Categoría de primer nivel vieja entera (ej. "Relojes", "Pantallas", "Accesorios Varios").
+                $candidatas[] = ['termino' => $termino, 'cantidad' => self::contar_directo($termino->term_id), 'ruta' => $termino->name];
                 continue;
             }
-            // Cuántos artículos tiene puestos DIRECTO en esta categoría vieja (sin contar hijos).
-            $cantidad = new WP_Query([
-                'post_type' => 'articulo',
-                'posts_per_page' => -1,
-                'fields' => 'ids',
-                'tax_query' => [['taxonomy' => 'categoria_producto', 'field' => 'term_id', 'terms' => $termino->term_id, 'include_children' => false]],
-            ]);
-            $candidatas[] = ['termino' => $termino, 'cantidad' => $cantidad->found_posts];
+
+            // Es una categoría válida: revisamos sus hijos por subcategorías viejas que no estén
+            // en la lista de subcategorías esperada para esa categoría.
+            $subcategorias_validas = self::ARBOL[$termino->name];
+            $hijos = get_terms(['taxonomy' => 'categoria_producto', 'parent' => $termino->term_id, 'hide_empty' => false]);
+            if (is_wp_error($hijos)) {
+                continue;
+            }
+            foreach ($hijos as $hijo) {
+                if (!in_array($hijo->name, $subcategorias_validas, true)) {
+                    $candidatas[] = ['termino' => $hijo, 'cantidad' => self::contar_directo($hijo->term_id), 'ruta' => $termino->name . ' / ' . $hijo->name];
+                }
+            }
         }
+
         return $candidatas;
     }
 
