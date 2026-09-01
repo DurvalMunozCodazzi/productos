@@ -53,31 +53,28 @@ class CLC_Migracion2 {
         $t = mb_strtolower($titulo);
 
         if ('Ordenadores' === $cat_raiz) {
-            if ('MacBooks' === $subcat_actual) {
-                return ['Ordenadores', 'MacBook'];
-            }
-            if ('iPads' === $subcat_actual) {
-                return ['Ordenadores', 'Tablet'];
-            }
-            if ('Tablets' === $subcat_actual) {
-                return ['Ordenadores', ('Samsung' === $marca_actual) ? 'Samsung' : 'Tablet'];
-            }
-            if ('Notebooks' === $subcat_actual) {
-                $marcas_con_boton = ['Lenovo', 'MSI', 'HP', 'Asus', 'Acer', 'Dell', 'Alienware'];
-                return ['Ordenadores', in_array($marca_actual, $marcas_con_boton, true) ? $marca_actual : 'Notebook'];
-            }
-            // La subcategoría del cliente ya está puesta (ej. "Tablet"/"MacBook"), no hace falta tocar nada.
-            if ($subcat_actual && in_array($subcat_actual, self::ARBOL['Ordenadores'], true)) {
+            // Si ya está en una subcategoría específica de marca/tipo (no genérica), ya está bien
+            // clasificado — no hace falta volver a tocarlo. "Notebook" y "Notebooks" NO cuentan acá
+            // porque son el cajón genérico donde pueden haber caído tablets/MacBooks por error de
+            // una corrida anterior con bug — esos siempre se vuelven a revisar más abajo.
+            $subcats_especificas = array_diff(self::ARBOL['Ordenadores'], ['Notebook']);
+            if ($subcat_actual && in_array($subcat_actual, $subcats_especificas, true)) {
                 return null;
             }
-            // Todavía crudo (la migración v1 no llegó a procesar este artículo): lo clasificamos
-            // directo desde la marca/título original, sin depender de que v1 haya terminado.
-            if ('Varios' === $marca_actual || str_contains($t, 'tablet')) {
+
+            // A partir de acá reclasificamos desde cero (sirve tanto para artículos crudos que
+            // v1 nunca procesó, como para los que quedaron mal repartidos en "Notebook"/"Notebooks"
+            // por un bug de una corrida anterior de esta misma herramienta).
+            if ('Tablets' === $subcat_actual || 'iPads' === $subcat_actual || 'Varios' === $marca_actual || str_contains($t, 'tablet')) {
                 $marca = ('Varios' === $marca_actual) ? (self::extraer_marca($titulo) ?: $marca_actual) : $marca_actual;
                 return ['Ordenadores', ('Samsung' === $marca) ? 'Samsung' : 'Tablet'];
             }
-            if (str_contains($t, 'macbook')) return ['Ordenadores', 'MacBook'];
-            if (str_starts_with($t, 'ipad') || str_contains($t, ' ipad')) return ['Ordenadores', 'Tablet'];
+            if ('MacBooks' === $subcat_actual || str_contains($t, 'macbook')) {
+                return ['Ordenadores', 'MacBook'];
+            }
+            if (str_starts_with($t, 'ipad') || str_contains($t, ' ipad')) {
+                return ['Ordenadores', 'Tablet'];
+            }
             $marcas_con_boton = ['Lenovo', 'MSI', 'HP', 'Asus', 'Acer', 'Dell', 'Alienware'];
             return ['Ordenadores', in_array($marca_actual, $marcas_con_boton, true) ? $marca_actual : 'Notebook'];
         }
@@ -107,7 +104,10 @@ class CLC_Migracion2 {
         }
 
         if ('Gaming' === $cat_raiz) {
-            if (in_array($subcat_actual, ['PlayStation', 'Xbox', 'Nintendo', 'Consolas'], true)) return null;
+            // Ya tiene su propia marca como subcategoría (PlayStation/Xbox/Nintendo) — no hace falta tocar.
+            if (in_array($subcat_actual, ['PlayStation', 'Xbox', 'Nintendo'], true)) return null;
+            // "Consolas" (genérica) revisa siempre la marca/título real, por si quedó mal repartida
+            // en una corrida anterior en vez de ir al botón específico que le corresponde.
             if (str_contains($t, 'x box') || str_contains($t, 'xbox') || 'Xbox' === $marca_actual) return ['Gaming', 'Xbox'];
             if (str_contains($t, 'nintendo') || 'Nintendo' === $marca_actual) return ['Gaming', 'Nintendo'];
             if (str_starts_with($t, 'play') || 'PlayStation' === $marca_actual) return ['Gaming', 'PlayStation'];
