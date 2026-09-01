@@ -107,29 +107,44 @@ class CLC_Estadisticas {
         );
     }
 
+    /** Arma un link de encabezado ordenable: click alterna asc/desc, muestra flechita en la columna activa. */
+    private static function link_orden($etiqueta, $clave, $orden_actual, $dir_actual) {
+        $nueva_dir = ($orden_actual === $clave && 'desc' === $dir_actual) ? 'asc' : 'desc';
+        $url = add_query_arg(['orden' => $clave, 'dir' => $nueva_dir]);
+        $flecha = '';
+        if ($orden_actual === $clave) {
+            $flecha = ' ' . ('desc' === $dir_actual ? '▼' : '▲');
+        }
+        return '<a href="' . esc_url($url) . '" style="color:inherit;text-decoration:none;">' . esc_html($etiqueta) . $flecha . '</a>';
+    }
+
     public static function render_page() {
         if (!current_user_can('manage_options')) {
             return;
         }
 
+        $orden_valido = ['consultar', 'compartir'];
+        $orden = in_array($_GET['orden'] ?? '', $orden_valido, true) ? $_GET['orden'] : 'consultar';
+        $dir = ('asc' === ($_GET['dir'] ?? '')) ? 'ASC' : 'DESC';
+
         $query = new WP_Query([
             'post_type' => 'articulo',
             'post_status' => 'publish',
             'posts_per_page' => -1,
-            'meta_key' => '_clc_clicks_consultar',
+            'meta_key' => '_clc_clicks_' . $orden,
             'orderby' => 'meta_value_num',
-            'order' => 'DESC',
+            'order' => $dir,
         ]);
         ?>
         <div class="wrap">
             <h1>Estadísticas de interés</h1>
-            <p>Cuántas veces se tocó "Consultar" o "Compartir" en cada artículo, desde que existe esta versión del plugin.</p>
+            <p>Cuántas veces se tocó "Consultar" o "Compartir" en cada artículo, desde que existe esta versión del plugin. Tocá un encabezado para ordenar por esa columna.</p>
             <table class="wp-list-table widefat fixed striped">
                 <thead>
                     <tr>
                         <th>Artículo</th>
-                        <th style="width:140px;">Consultas por WhatsApp</th>
-                        <th style="width:140px;">Veces compartido</th>
+                        <th style="width:170px;"><?php echo self::link_orden('Consultas por WhatsApp', 'consultar', $orden, strtolower($dir)); ?></th>
+                        <th style="width:170px;"><?php echo self::link_orden('Veces compartido', 'compartir', $orden, strtolower($dir)); ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -151,7 +166,7 @@ class CLC_Estadisticas {
             </table>
 
             <h2 style="margin-top:30px;">Categorías y marcas más navegadas</h2>
-            <p>Cuántas veces se abrió cada página de categoría/marca (no solo el interés puntual en un producto).</p>
+            <p>Cuántas veces se abrió cada página de categoría/marca (no solo el interés puntual en un producto). Ya vienen ordenadas de mayor a menor.</p>
             <table class="wp-list-table widefat fixed striped" style="max-width:600px;">
                 <thead><tr><th>Categoría / Marca</th><th style="width:120px;">Visitas</th></tr></thead>
                 <tbody>
