@@ -19,8 +19,7 @@ class CLC_Migracion2 {
         'Audio' => ['Auriculares', 'Parlantes', 'Multimedia', 'Varios'],
         'Celulares' => ['Xiaomi', 'Motorola', 'Samsung', 'Infinix', 'iPhone', 'Oppo', 'Blackview', 'Doogee', 'Accesorios'],
         'Gaming' => ['PlayStation', 'Xbox', 'Nintendo', 'Consolas'],
-        'Hogar' => ['Electrodomésticos', 'Aire Acondicionado', 'Cámara de Vigilancia', 'Proyectores'],
-        'Televisores' => [],
+        'Hogar' => ['Electrodomésticos', 'Aire Acondicionado', 'Cámara de Vigilancia', 'Televisores', 'Proyectores'],
         'Movilidad' => ['Patineta', 'Moto Eléctrica'],
         'Ordenadores' => ['Lenovo', 'MSI', 'HP', 'MacBook', 'Asus', 'Acer', 'Dell', 'Alienware', 'Samsung', 'Tablet', 'Notebook', 'Accesorios'],
         'Reloj' => ['Garmin', 'Samsung Watch', 'Apple Watch', 'Xiaomi', 'Varios'],
@@ -117,8 +116,8 @@ class CLC_Migracion2 {
 
         if (in_array($cat_raiz, ['Pantallas', 'Hogar', 'Televisores'], true)) {
             if ('Proyectores' === $subcat_actual || str_contains($t, 'proyector')) return ['Hogar', 'Proyectores'];
-            // Televisores es categoría propia, va directo a marca (sin subcategoría en el medio).
-            return ['Televisores', null];
+            if ('Hogar' === $cat_raiz && 'Televisores' === $subcat_actual) return null;
+            return ['Hogar', 'Televisores'];
         }
 
         if ('Movilidad' === $cat_raiz) {
