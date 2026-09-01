@@ -24,7 +24,7 @@ class CLC_Migracion2 {
         'Ordenadores' => ['Lenovo', 'MSI', 'HP', 'MacBook', 'Asus', 'Acer', 'Dell', 'Alienware', 'Samsung', 'Tablet', 'Notebook', 'Accesorios'],
         'Reloj' => ['Garmin', 'Samsung Watch', 'Apple Watch', 'Xiaomi', 'Varios'],
         'Fotografía y Filmación' => ['Cámara Fotográfica', 'Drone', 'Micrófono', 'GPS', 'Ecosonda', 'Varios'],
-        'Artículos Varios' => ['Impresoras'],
+        'Artículos Varios' => [],
         'Belleza y Cuidado' => ['Planchita', 'Secador', 'Kit Modelador', 'Caballeros', 'Varios'],
     ];
 
@@ -129,8 +129,10 @@ class CLC_Migracion2 {
             // de antes de la primera reorganización) también se mudan a Reloj.
             if ('Garmin' === $marca_actual) return ['Reloj', 'Garmin'];
             if ('Samsung Watch' === $marca_actual) return ['Reloj', 'Samsung Watch'];
+            // Las impresoras (y a futuro mouse, fundas, etc.) van al botón "Accesorios" de
+            // Ordenadores, no a Artículos Varios — el cliente quiere todos los accesorios de PC juntos ahí.
             if ('Impresoras' === $subcat_actual || 'Impresoras' === $marca_actual) {
-                return ['Artículos Varios', 'Impresoras'];
+                return ['Ordenadores', 'Accesorios'];
             }
             return null;
         }
